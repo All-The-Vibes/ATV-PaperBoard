@@ -4,8 +4,8 @@ All notable changes to atv-paperboard are documented in this file. Format follow
 
 ## [Unreleased]
 
-### Planned for v0.1.1
-- OpenCode adapter (deferred from v0.1.0; 5 breaking defects in SPEC v4 TS plugin require empirical-verification cycle).
+### Planned for v0.1.2
+- OpenCode adapter (deferred from v0.1.1; 5 breaking defects in SPEC v4 TS plugin require empirical-verification cycle).
 - USPTO TESS clearance on "paperboard" / "atv" IC 009/042.
 - Public release (PyPI + GitHub + Claude Code marketplace PR).
 - Cross-harness artifact aggregation (one gallery showing artifacts from multiple harnesses on one machine).
@@ -14,6 +14,21 @@ All notable changes to atv-paperboard are documented in this file. Format follow
 - VS Code Chat Participant extension (Copilot in-IDE path).
 - MCP server integration.
 - Full HTML-side token trace (spacing/typography/shadow). v0.1.0 is color-only.
+
+## [0.1.1] — 2026-05-15
+
+### Fixed
+- `_flatten_tailwind()` now unwraps the `{"theme": {"extend": {...}}}` envelope that `@google/design.md export tailwind` returns; previously the nested structure was passed through verbatim, causing the rendered HTML to emit an empty `:root {}` block with no design tokens applied.
+- Added a pure-Python YAML fallback path in `core/render.py` so token injection works when the Node bridge is unavailable (CI environments without `node`, offline use).
+
+### Added
+- Render-fidelity test: end-to-end sentinel-color check (`#ABCDEF`) verifies that a known token value survives the full export → flatten → CSS-variable injection → HTML render pipeline.
+- Bridge-shape mismatch warning: `core/render.py` now emits a structured warning when the export envelope shape does not match the expected `theme.extend` contract, making future `@google/design.md` schema changes immediately visible rather than silently producing empty tokens.
+
+### Known limitations (carried into v0.1.2)
+- **G3 — workflow glob is not monorepo-safe**: `paperboard-artifacts/**` does not match nested paths in monorepos; `**/paperboard-artifacts/**` is the correct pattern but requires validating against real multi-package repos before shipping.
+- **G4 — no merge-block enforcement**: validate failures are reported but do not block merges; enforcing this requires branch protection rules that vary by org policy and cannot be mandated by the tool itself.
+- **G5 — `@google/design.md` installed globally without integrity check**: `npm install -g @google/design.md@0.1.1` pins by version only; a subresource integrity or lockfile-based install path is deferred until the upstream package exposes stable SRI hashes.
 
 ## [0.1.0-preview] — 2026-05-15
 

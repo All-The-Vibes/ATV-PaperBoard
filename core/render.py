@@ -28,6 +28,7 @@ import os
 import re
 import sys
 import threading
+import warnings
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -438,6 +439,20 @@ def _flatten_tailwind(export_dict: dict[str, Any]) -> dict[str, str]:
         extend = theme.get("extend")
         if isinstance(extend, dict):
             export_dict = extend
+
+    # ── Unknown-shape guard ───────────────────────────────────────────────────
+    # Fire if neither the theme.extend wrapper was found nor a top-level
+    # "colors" key is present — likely a future @google/design.md schema change.
+    if theme is None and "colors" not in export_dict:
+        warnings.warn(
+            "atv-paperboard: _flatten_tailwind received unrecognized export shape"
+            " (no 'theme.extend' wrapper and no top-level 'colors' key)."
+            f" Got top-level keys: {list(export_dict.keys())}."
+            " Token injection will fall back to empty."
+            " This may indicate a @google/design.md schema change.",
+            UserWarning,
+            stacklevel=2,
+        )
 
     flat: dict[str, str] = {}
 
