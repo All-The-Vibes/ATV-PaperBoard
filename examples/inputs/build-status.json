@@ -1,0 +1,21 @@
+{
+  "title": "atv-paperboard v0.1.0-preview Build Status",
+  "subtitle": "Phase 0 → Phase 6 dashboard, 2026-05-15",
+  "rows": [
+    {"phase": "Phase -1: Scaffold", "status": "DONE", "tests": "n/a", "duration_min": 5},
+    {"phase": "Phase 0: Verification matrix", "status": "DONE", "tests": "9/9 + 2 skipped", "duration_min": 16},
+    {"phase": "Phase 1: RENDER pillar", "status": "DONE", "tests": "14/14", "duration_min": 26},
+    {"phase": "Phase 2: ENFORCE pillar", "status": "DONE", "tests": "12/12", "duration_min": 26},
+    {"phase": "Phase 3: Starters + attribution", "status": "DONE", "tests": "11/11", "duration_min": 18},
+    {"phase": "Phase 4: Claude Code adapter", "status": "DONE", "tests": "17/17", "duration_min": 17},
+    {"phase": "Phase 5: Codex adapter", "status": "DONE", "tests": "14/14", "duration_min": 9},
+    {"phase": "Phase 6: COMPOUND + Copilot recipe", "status": "DONE", "tests": "7/7", "duration_min": 20},
+    {"phase": "Phase 7a: Real-world test pass", "status": "IN_PROGRESS", "tests": "rendering this artifact", "duration_min": null}
+  ],
+  "totals": {
+    "tests_passing": 87,
+    "tests_skipped": 2,
+    "bugs_found_in_phase_7a": 3,
+    "bugs_fixed_in_phase_7a": 3
+  }
+}

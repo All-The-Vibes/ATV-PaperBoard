@@ -1,0 +1,45 @@
+name: Paperboard Validate
+
+on:
+  pull_request:
+    paths:
+      - "paperboard-artifacts/**"
+
+jobs:
+  validate:
+    name: Validate & Regenerate Gallery
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install @google/design.md
+        run: npm install -g @google/design.md@0.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install atv-paperboard
+        run: pip install atv-paperboard
+
+      - name: Validate all artifacts
+        run: paperboard validate-all paperboard-artifacts/
+
+      - name: Regenerate gallery
+        run: paperboard gallery
+
+      - name: Upload gallery artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paperboard-gallery
+          path: paperboard-artifacts/gallery.html
+          retention-days: 14

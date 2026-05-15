@@ -149,7 +149,7 @@ def test_regenerate_step2_drops_optional_components():
         validate_results = [_FAILING_VALIDATION, _PASSING_VALIDATION]
         validate_call = [0]
 
-        def mock_validate(s, h):
+        def mock_validate(s, h, **kwargs):
             idx = validate_call[0]
             validate_call[0] += 1
             return validate_results[min(idx, len(validate_results) - 1)]
@@ -205,7 +205,7 @@ def test_regenerate_step3_uses_default_design():
         validate_results = [_FAILING_VALIDATION, _FAILING_VALIDATION, _PASSING_VALIDATION]
         validate_call = [0]
 
-        def mock_validate(s, h):
+        def mock_validate(s, h, **kwargs):
             idx = validate_call[0]
             validate_call[0] += 1
             return validate_results[min(idx, len(validate_results) - 1)]

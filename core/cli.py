@@ -1,10 +1,11 @@
 """core/cli.py — Universal CLI entry point for atv-paperboard.
 
 Subcommands:
-  render                 — render an artifact triple
+  render                 — render an artifact triple (also auto-regens gallery)
   validate               — run ENFORCE checks on a slug
+  validate-all           — validate every artifact in a directory
   regenerate             — 3-step retry for a failing slug
-  gallery                — placeholder (Phase 6)
+  gallery                — (re)generate the COMPOUND gallery HTML
   detect-artifact-candidate — PostToolUse hook helper (Phase 4 hook heuristics; §16)
   doctor                 — diagnose install
 
@@ -20,8 +21,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Force UTF-8 stdout/stderr on Windows so glyphs like ✓ ✗ — and other non-cp1252
+# characters in subcommand output don't crash with UnicodeEncodeError. Stdlib-only;
+# no-op on systems that already use UTF-8. Discovered via Phase 7a real-world run.
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass  # non-tty stream or older interpreter; silently degrade
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+
+# ─�� Main ──────────────────────────────────────────────────────────────────────
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,13 +74,25 @@ def main(argv: list[str] | None = None) -> int:
     # validate
     p_validate = sub.add_parser("validate", help="Run ENFORCE checks on an artifact")
     p_validate.add_argument("slug", help="Artifact slug")
+    p_validate.add_argument("--output-dir", default=None, help="Look for artifact in this dir instead of harness default")
 
     # regenerate
     p_regen = sub.add_parser("regenerate", help="3-step differentiated retry")
     p_regen.add_argument("slug", help="Failing artifact slug")
+    p_regen.add_argument("--output-dir", default=None, help="Look for artifact in this dir instead of harness default")
 
-    # gallery (Phase 6 placeholder)
-    sub.add_parser("gallery", help="[Phase 6] Build compounding gallery (placeholder)")
+    # gallery (Phase 6)
+    p_gallery = sub.add_parser("gallery", help="Regenerate the compound gallery HTML")
+    p_gallery.add_argument(
+        "--harness",
+        default=None,
+        help="Override harness for artifact dir resolution",
+    )
+    p_gallery.add_argument("--output-dir", default=None, help="Override artifact directory")
+
+    # validate-all
+    p_val_all = sub.add_parser("validate-all", help="Validate every artifact in a directory")
+    p_val_all.add_argument("directory", help="Path to the artifact directory to scan")
 
     # detect-artifact-candidate (Phase 4 placeholder; hook helper)
     p_detect = sub.add_parser(
@@ -94,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_regenerate(args, harness)
     elif args.command == "gallery":
         return _cmd_gallery(args, harness)
+    elif args.command == "validate-all":
+        return _cmd_validate_all(args, harness)
     elif args.command == "detect-artifact-candidate":
         return _cmd_detect_artifact_candidate(args, harness)
     elif args.command == "doctor":
@@ -131,13 +156,22 @@ def _cmd_render(args: argparse.Namespace, harness: str) -> int:
     if not args.no_open:
         _render._serve_and_open(triple["html_path"])
 
+    # COMPOUND pillar: auto-regenerate gallery after successful render.
+    try:
+        from core.gallery import regenerate_gallery  # noqa: PLC0415
+        art_dir = Path(args.output_dir) if args.output_dir else None
+        regenerate_gallery(harness, artifact_dir=art_dir)
+    except Exception:  # noqa: BLE001
+        pass  # gallery regen is non-fatal
+
     return 0
 
 
 def _cmd_validate(args: argparse.Namespace, harness: str) -> int:
     from core.validate import validate_artifact  # noqa: PLC0415
 
-    result = validate_artifact(args.slug, harness)
+    art_dir = Path(args.output_dir) if args.output_dir else None
+    result = validate_artifact(args.slug, harness, artifact_dir=art_dir)
     if result.passed:
         print(f"✓ ACCEPT  slug={args.slug}")
         return 0
@@ -154,13 +188,14 @@ def _cmd_regenerate(args: argparse.Namespace, harness: str) -> int:
     from core.validate import validate_artifact  # noqa: PLC0415
     from core import regenerate as _regen  # noqa: PLC0415
 
+    art_dir = Path(args.output_dir) if args.output_dir else None
     # Validate current slug first
-    initial = validate_artifact(args.slug, harness)
+    initial = validate_artifact(args.slug, harness, artifact_dir=art_dir)
     if initial.passed:
         print(f"✓ slug={args.slug} already passes; no regeneration needed.")
         return 0
 
-    result = _regen.regenerate(args.slug, initial)
+    result = _regen.regenerate(args.slug, initial, artifact_dir=art_dir)
     step = result["retry_step"]
     new_slug = result["new_slug"]
     vr = result["validation"]
@@ -169,9 +204,37 @@ def _cmd_regenerate(args: argparse.Namespace, harness: str) -> int:
     return 0 if vr.passed else 1
 
 
-def _cmd_gallery(_args: argparse.Namespace, _harness: str) -> int:
-    print("[gallery] Phase 6 placeholder — not yet implemented.")
+def _cmd_gallery(args: argparse.Namespace, harness: str) -> int:
+    from core.gallery import regenerate_gallery  # noqa: PLC0415
+
+    override = getattr(args, "harness", None)
+    art_dir = Path(args.output_dir) if args.output_dir else None
+    gallery_path = regenerate_gallery(override or harness, artifact_dir=art_dir)
+    print(f"Gallery: {gallery_path}")
     return 0
+
+
+def _cmd_validate_all(args: argparse.Namespace, _harness: str) -> int:
+    from core.validate import validate_all  # noqa: PLC0415
+
+    directory = Path(args.directory)
+    results = validate_all(directory)
+    if not results:
+        print(f"No artifacts found in {directory}")
+        return 0
+    failed = 0
+    for r in results:
+        # derive slug from lint_findings message or just count
+        status = "✓ ACCEPT" if r.passed else f"✗ FAIL({r.fail_class})"
+        print(status)
+        if not r.passed:
+            failed += 1
+            for f in r.lint_findings:
+                print(f"  lint: {f.get('message', f)}")
+            for v in r.color_violations:
+                print(f"  color-trace: undeclared hex {v}")
+    print(f"\n{len(results)} artifact(s) checked — {failed} failed.")
+    return 1 if failed else 0
 
 
 def _cmd_detect_artifact_candidate(args: argparse.Namespace, harness: str) -> int:
@@ -262,13 +325,24 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
     persist_path = _resolve_artifact_dir(harness)
     print(f"  persistence path: {persist_path}")
 
-    # Check paperboard.DESIGN.md lints
+    # Check paperboard.DESIGN.md lints. Split by severity: only errors+warnings
+    # are blocking. Info-level messages (e.g., token counts) are not failures.
+    # Discovered via Phase 7a: original code lumped all findings as ✗.
     default_design = Path(__file__).parent.parent / "designs" / "paperboard.DESIGN.md"
     if default_design.exists():
         try:
             from core import bridge as _bridge  # noqa: PLC0415
-            findings = _bridge.lint(default_design)
-            lint_status = "✓ clean" if not findings else f"✗ {len(findings)} finding(s)"
+            lint_result = _bridge.lint(default_design)
+            findings = lint_result.get("findings", []) if isinstance(lint_result, dict) else []
+            errs = [f for f in findings if f.get("severity") == "error"]
+            warns = [f for f in findings if f.get("severity") == "warning"]
+            infos = [f for f in findings if f.get("severity") == "info"]
+            if errs or warns:
+                lint_status = f"✗ {len(errs)} error(s), {len(warns)} warning(s)"
+            elif infos:
+                lint_status = f"✓ clean ({len(infos)} info)"
+            else:
+                lint_status = "✓ clean"
         except ImportError:
             lint_status = "(bridge.py not available)"
     else:

@@ -1,0 +1,11 @@
+# Codex-specific metadata that complements SKILL.md.
+# Schema source: developers.openai.com/codex/skills
+# NOTE: The `allowed_tools` field does NOT exist in the documented openai.yaml schema.
+# Tool access in Codex is governed by ~/.codex/config.toml [permissions] blocks and sandbox
+# policy — not by skill frontmatter. This file was corrected per SPEC v4.1 / Stage 3 research.
+interface:
+  display_name: "atv-paperboard"
+  short_description: "Cross-harness HTML artifact toolkit."
+  brand_color: "#3B82F6"
+policy:
+  allow_implicit_invocation: true

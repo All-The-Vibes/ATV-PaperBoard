@@ -1,0 +1,39 @@
+# Paperboard — GitHub Copilot Coding Agent Instructions
+
+Integrate `atv-paperboard` into your Copilot Coding Agent workflow to auto-render
+structured outputs as self-contained HTML artifacts governed by a `DESIGN.md`.
+
+## When to invoke `paperboard render`
+
+Invoke after any tool writes a file that matches **one or more** of these patterns:
+
+| Trigger | Examples |
+|---------|---------|
+| Status dashboards | Build status table, CI results matrix, test pass/fail grid |
+| Comparison tables | Model benchmarks, A/B experiment results, feature comparisons |
+| Output viewers | LLM evaluation sheets, structured JSON summaries, scoring rubrics |
+| Data tables with ≥2 numeric columns | Performance metrics, cost breakdowns, load test results |
+| Markdown files with `status`/`score`/`result`/`count` column headers | Any agent-generated report |
+
+## How to invoke
+
+```bash
+paperboard render --input <path-to-file> [--tier pico|daisy] [--no-open]
+```
+
+Pass `--no-open` in CI / headless environments.
+
+## After rendering
+
+Run `paperboard gallery` to refresh the local artifact index at `paperboard-artifacts/gallery.html`.
+
+## Do NOT invoke for
+
+- Pure prose documentation (README, CHANGELOG, design docs)
+- Files in `.github/`, `docs/`, or `node_modules/`
+- Files the render step itself produces (self-recursion guard)
+
+## Harness detection
+
+`paperboard` auto-detects the harness. No configuration needed when running under
+GitHub Copilot Coding Agent (resolves to `copilot` harness, writes to `paperboard-artifacts/`).

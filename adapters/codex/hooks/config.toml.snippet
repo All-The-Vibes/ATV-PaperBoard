@@ -1,0 +1,20 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# atv-paperboard — Codex hook snippet
+#
+# THIS IS A SNIPPET, NOT A COMPLETE config.toml FILE.
+# Append the lines below to your ~/.codex/config.toml.
+#
+# Schema source: developers.openai.com/codex/config-advanced
+#
+# SPEC v4 had two bugs that are corrected here:
+#   Bug 1: [hooks.PostToolUse] (single table) → must be [[hooks.PostToolUse]] (array-of-tables)
+#   Bug 2: match.tool = "Write" → must be matcher = "^(Write|Edit)$" (regex string, not dotted key)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[hooks.PostToolUse]]
+matcher = "^(Write|Edit)$"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = "python ${HOME}/.agents/skills/atv-paperboard/core/cli.py detect-artifact-candidate"
+timeout = 30

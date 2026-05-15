@@ -36,59 +36,68 @@ class ValidationResult:
 # ── Public API ────────────────────────────────────────────────────────────────
 
 
-def validate_artifact(slug: str, harness: str) -> ValidationResult:
-    """Run ENFORCE checks for a persisted artifact triple.
+def validate_all(directory: Path) -> list[ValidationResult]:
+    """Validate every artifact triple found in *directory*.
 
-    Resolves the triple paths from ``persist.artifact_dir(harness) / slug.*``.
-    Falls back to ``CWD/paperboard-artifacts/<slug>.*`` if persist unavailable.
+    Iterates over ``*.meta.yaml`` files, derives the slug, and calls
+    :func:`validate_artifact` for each one.  The harness is read from the
+    meta file when available; falls back to ``"standalone"``.
 
     Args:
-        slug: Artifact slug (filename stem).
-        harness: Harness name (used for path resolution).
+        directory: Path to the artifact directory to scan.
 
     Returns:
-        :class:`ValidationResult`.
+        List of :class:`ValidationResult` instances (one per artifact found).
     """
-    artifact_dir = _resolve_artifact_dir(harness)
-    html_path = artifact_dir / f"{slug}.html"
-    design_path = artifact_dir / f"{slug}.DESIGN.md"
+    directory = Path(directory)
+    results: list[ValidationResult] = []
+    for meta_file in sorted(directory.glob("*.meta.yaml")):
+        try:
+            import yaml as _yaml  # noqa: PLC0415
+            meta = _yaml.safe_load(meta_file.read_text(encoding="utf-8")) or {}
+        except Exception:  # noqa: BLE001
+            meta = {}
+        slug = meta.get("slug") or meta_file.stem.replace(".meta", "")
+        harness = meta.get("harness", "standalone")
+        # Validate using the directory directly (bypass harness path resolution).
+        html_path = directory / f"{slug}.html"
+        design_path = directory / f"{slug}.DESIGN.md"
+        result = _validate_paths(slug, html_path, design_path)
+        results.append(result)
+    return results
 
+
+def _validate_paths(slug: str, html_path: Path, design_path: Path) -> ValidationResult:
+    """Core validation logic given explicit paths (used by both public functions)."""
     if not html_path.exists() or not design_path.exists():
         return ValidationResult(
             passed=False,
             fail_class="environment",
-            lint_findings=[{"message": f"Triple not found in {artifact_dir}"}],
+            lint_findings=[{"message": f"Triple not found for slug {slug!r}"}],
         )
 
-    # ── Step 1: lint via bridge ────────────────────────────────────────────
     lint_findings: list[dict[str, Any]] = []
-    bridge_available = False
     try:
         from core import bridge as _bridge  # noqa: PLC0415
-
         lint_result = _bridge.lint(design_path)
-        # lint() returns {"findings": [...], "summary": {...}}
         lint_findings = lint_result.get("findings", [])
-        bridge_available = True
     except ImportError:
-        # TODO: Remove once bridge.py is delivered by the parallel agent.
         lint_findings = []
-        bridge_available = False
 
-    if lint_findings:
-        return ValidationResult(
-            passed=False,
-            lint_findings=lint_findings,
-            fail_class="lint",
-        )
+    # Only error/warning severities block validation. Info findings (e.g. the
+    # token-count summary @google/design.md emits) are non-blocking.
+    # Discovered via Phase 7a real-world run.
+    blocking = [
+        f for f in lint_findings
+        if isinstance(f, dict) and f.get("severity") in ("error", "warning")
+    ]
+    if blocking:
+        return ValidationResult(passed=False, lint_findings=blocking, fail_class="lint")
 
-    # ── Step 2: HTML-side color-token trace ───────────────────────────────
     html_content = html_path.read_text(encoding="utf-8")
     design_content = design_path.read_text(encoding="utf-8")
-
     declared_colors = _extract_design_colors(design_content)
     inline_colors = _extract_inline_colors(html_content)
-
     violations = [c for c in inline_colors if c.lower() not in declared_colors]
 
     if violations:
@@ -98,13 +107,30 @@ def validate_artifact(slug: str, harness: str) -> ValidationResult:
             color_violations=violations,
             fail_class="color-trace",
         )
+    return ValidationResult(passed=True, lint_findings=lint_findings, color_violations=[], fail_class="none")
 
-    return ValidationResult(
-        passed=True,
-        lint_findings=lint_findings,
-        color_violations=[],
-        fail_class="none",
-    )
+
+def validate_artifact(
+    slug: str, harness: str, artifact_dir: Path | None = None
+) -> ValidationResult:
+    """Run ENFORCE checks for a persisted artifact triple.
+
+    Resolves the triple paths from ``persist.artifact_dir(harness) / slug.*``.
+    Falls back to ``CWD/paperboard-artifacts/<slug>.*`` if persist unavailable.
+
+    Args:
+        slug: Artifact slug (filename stem).
+        harness: Harness name (used for path resolution).
+        artifact_dir: If provided, use this directory instead of the harness default.
+
+    Returns:
+        :class:`ValidationResult`.
+    """
+    resolved_dir = artifact_dir if artifact_dir is not None else _resolve_artifact_dir(harness)
+    html_path = resolved_dir / f"{slug}.html"
+    design_path = resolved_dir / f"{slug}.DESIGN.md"
+
+    return _validate_paths(slug, html_path, design_path)
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────

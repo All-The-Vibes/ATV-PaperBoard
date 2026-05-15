@@ -1,0 +1,11 @@
+{
+  "title": "Harness Comparison: Claude Code vs Codex CLI vs OpenCode vs Copilot",
+  "subtitle": "atv-paperboard v0.1.0-preview integration matrix",
+  "rows": [
+    {"feature": "Native plugin manifest", "claude_code": "Yes (plugin.json)", "codex": "Yes (openai.yaml)", "opencode": "Yes (TS factory)", "copilot": "No (recipe only)"},
+    {"feature": "Persistence env var", "claude_code": "CLAUDE_PLUGIN_DATA", "codex": "filesystem only", "opencode": "OPENCODE_CONFIG_DIR", "copilot": "workspace ./paperboard-artifacts/"},
+    {"feature": "Hook event names", "claude_code": "PostToolUse", "codex": "PostToolUse (parity)", "opencode": "tool.execute.after", "copilot": "n/a (Coding Agent only)"},
+    {"feature": "Skill discovery", "claude_code": ".claude/skills/", "codex": "~/.agents/skills/", "opencode": "Claude-compatible multi-path", "copilot": "instructions only"},
+    {"feature": "v0.1.0-preview shipped", "claude_code": "Yes", "codex": "Yes", "opencode": "Deferred to v0.1.1", "copilot": "Recipe only"}
+  ]
+}

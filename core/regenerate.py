@@ -25,7 +25,9 @@ _OPTIONAL_COMPONENT_KEYS = ("body_html", "components", "extras", "sidebar", "foo
 # ── Public API ────────────────────────────────────────────────────────────────
 
 
-def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
+def regenerate(
+    slug: str, validation: ValidationResult, artifact_dir: Path | None = None
+) -> dict[str, Any]:
     """Run a 3-step differentiated retry for a failed artifact.
 
     Reads the original artifact's meta.yaml to recover input parameters,
@@ -34,6 +36,8 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
     Args:
         slug: Slug of the failed artifact.
         validation: The failing :class:`~core.validate.ValidationResult`.
+        artifact_dir: If provided, use this directory for both reading meta and
+                      writing new artifacts (overrides harness-based resolution).
 
     Returns:
         dict with keys: ``retry_step`` (1–3), ``new_slug``, ``validation``.
@@ -42,7 +46,7 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
     from core import render as _render  # noqa: PLC0415
     from core.validate import validate_artifact
 
-    original_meta = _load_original_meta(slug)
+    original_meta = _load_original_meta(slug, artifact_dir=artifact_dir)
     harness = original_meta.get("harness", "standalone").split("/")[0]
     # Normalise — "atv-paperboard" harness string from render.py vs detect harness name
     if harness == "atv-paperboard":
@@ -51,7 +55,7 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
     original_input = original_meta.get("_input_data", {})
     original_design = Path(original_meta.get("design", str(_DEFAULT_DESIGN)))
     original_tier = original_meta.get("tier", "pico")
-    output_dir = _resolve_artifact_dir(harness)
+    output_dir = artifact_dir if artifact_dir is not None else _resolve_artifact_dir(harness)
 
     # ── Step 1: switch tier ───────────────────────────────────────────────
     new_tier = "daisy" if original_tier == "pico" else "pico"
@@ -62,7 +66,7 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
         output_dir=output_dir,
     )
     new_slug = triple["slug"]
-    result = validate_artifact(new_slug, harness)
+    result = validate_artifact(new_slug, harness, artifact_dir=artifact_dir)
     if result.passed:
         return {"retry_step": 1, "new_slug": new_slug, "validation": result}
 
@@ -79,7 +83,7 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
         output_dir=output_dir,
     )
     new_slug = triple["slug"]
-    result = validate_artifact(new_slug, harness)
+    result = validate_artifact(new_slug, harness, artifact_dir=artifact_dir)
     if result.passed:
         return {"retry_step": 2, "new_slug": new_slug, "validation": result}
 
@@ -92,7 +96,7 @@ def regenerate(slug: str, validation: ValidationResult) -> dict[str, Any]:
         output_dir=output_dir,
     )
     new_slug = triple["slug"]
-    result = validate_artifact(new_slug, harness)
+    result = validate_artifact(new_slug, harness, artifact_dir=artifact_dir)
     return {"retry_step": 3, "new_slug": new_slug, "validation": result}
 
 
@@ -110,14 +114,20 @@ def _resolve_artifact_dir(harness: str) -> Path:
         return Path.cwd() / "paperboard-artifacts"
 
 
-def _load_original_meta(slug: str) -> dict[str, Any]:
+def _load_original_meta(slug: str, artifact_dir: Path | None = None) -> dict[str, Any]:
     """Load meta.yaml for the given slug from the default artifact dir.
 
-    Searches CWD/paperboard-artifacts first, then tries persist module.
+    If artifact_dir is provided, checks there first before falling back to
+    CWD/paperboard-artifacts and the persist module.
     """
     import yaml  # stdlib-adjacent; in dependencies
 
-    for candidate_dir in _candidate_dirs():
+    candidate_dirs: list[Path] = []
+    if artifact_dir is not None:
+        candidate_dirs.append(artifact_dir)
+    candidate_dirs.extend(_candidate_dirs())
+
+    for candidate_dir in candidate_dirs:
         meta_path = candidate_dir / f"{slug}.meta.yaml"
         if meta_path.exists():
             return yaml.safe_load(meta_path.read_text(encoding="utf-8")) or {}

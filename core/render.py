@@ -2,20 +2,28 @@
 
 Converts input data + a DESIGN.md path into a paired HTML + DESIGN.md + meta.yaml triple.
 
-API surface used from the parallel agent:
-  bridge.export(design_path: Path, format: str) -> dict   (format='tailwind')
-  bridge.lint(design_path: Path) -> list[dict]
+Input contract:
+  input_data['title']     — required, string used for slug + <title>
+  input_data['subtitle']  — optional, rendered as <h2> below title
+  input_data['body_html'] — already-rendered HTML; takes precedence if present
+  input_data['body_md']   — markdown; converted via a tiny built-in converter
+  input_data['rows']      — list of dicts; rendered as a table (column order = first-row keys)
 
-If bridge.py doesn't exist yet, render_artifact will note the absence and proceed with
-an empty token dict (graceful degradation).
+If none of body_html/body_md/rows is present, the body falls back to a
+formatted JSON dump so the artifact is still self-explanatory.
 
-TODO: Remove the graceful-degradation branch once bridge.py is delivered.
+API surface used:
+  bridge.export(design_path: Path, fmt: str) -> dict
+  bridge.lint(design_path: Path) -> dict   ({findings: [...], summary: {...}})
+  detect.detect_harness() -> str
 """
 from __future__ import annotations
 
 import datetime
 import hashlib
+import html as _html_lib
 import http.server
+import json
 import os
 import re
 import sys
@@ -35,7 +43,7 @@ _TIER_TEMPLATES = {
     "pico": "pico-tier.html.j2",
     "daisy": "daisy-tier.html.j2",
 }
-_HARNESS = "atv-paperboard/0.1.0"
+_GENERATOR = "atv-paperboard/0.1.0"
 
 # daisyUI uses short HSL-component CSS vars; Pico uses longer semantic names.
 _PICO_TOKEN_MAP: dict[str, str] = {
@@ -114,7 +122,9 @@ def render_artifact(
         tokens = tokens_from_export(export_dict, tier=tier)
         lint_result = _bridge.lint(design_path)
         # lint() returns {"findings": [...], "summary": {...}}
-        lint_passed = len(lint_result.get("findings", [])) == 0
+        findings = lint_result.get("findings", [])
+        blocking = [f for f in findings if isinstance(f, dict) and f.get("severity") in ("error", "warning")]
+        lint_passed = len(blocking) == 0
     except ImportError:
         # TODO: Remove once bridge.py is delivered by the parallel agent.
         tokens = {}
@@ -130,7 +140,7 @@ def render_artifact(
     dest_design_path.write_text(design_content, encoding="utf-8")
 
     # Render HTML via Jinja2
-    body_html = str(input_data.get("body_html", ""))
+    body_html = _default_body_html(input_data)
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)), autoescape=False)
     template = env.get_template(_TIER_TEMPLATES[tier])
     html_content = template.render(
@@ -144,7 +154,8 @@ def render_artifact(
     # Write meta.yaml sidecar
     meta: dict[str, Any] = {
         "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "harness": _HARNESS,
+        "generator": _GENERATOR,
+        "harness": _detect_harness_safe(),
         "design": str(design_path),
         "tier": tier,
         "slug": slug,
@@ -195,6 +206,134 @@ def tokens_from_export(export_dict: dict[str, Any], tier: str = "pico") -> dict[
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
+
+def _detect_harness_safe() -> str:
+    """Return the detected harness string, or 'standalone' on ImportError."""
+    try:
+        from core.detect import detect_harness  # noqa: PLC0415
+        return detect_harness()
+    except (ImportError, Exception):
+        return "standalone"
+
+
+def _default_body_html(input_data: dict[str, Any]) -> str:
+    """Convert input_data to an HTML body string.
+
+    Priority:
+      1. body_html — returned as-is.
+      2. body_md   — converted via tiny built-in markdown converter.
+      3. rows      — rendered as an HTML <table>.
+      4. fallback  — <pre><code> with JSON dump.
+
+    A header section (h1 title + h2 subtitle) is always prepended.
+    """
+    parts: list[str] = []
+
+    title = input_data.get("title")
+    subtitle = input_data.get("subtitle")
+    if title:
+        parts.append(f"<h1>{_html_lib.escape(str(title))}</h1>")
+    if subtitle:
+        parts.append(f"<h2>{_html_lib.escape(str(subtitle))}</h2>")
+
+    if "body_html" in input_data:
+        parts.append(str(input_data["body_html"]))
+        return "\n".join(parts)
+
+    if "body_md" in input_data:
+        parts.append(_md_to_html(str(input_data["body_md"])))
+        return "\n".join(parts)
+
+    rows = input_data.get("rows")
+    if rows and isinstance(rows, list) and len(rows) > 0 and isinstance(rows[0], dict):
+        parts.append(_rows_to_table(rows))
+        return "\n".join(parts)
+
+    # Fallback: JSON dump
+    parts.append(f"<pre><code>{_html_lib.escape(json.dumps(input_data, indent=2))}</code></pre>")
+    return "\n".join(parts)
+
+
+def _md_to_html(md: str) -> str:
+    """Tiny markdown -> HTML converter using re only.
+
+    Supports: headings (#/##/###), **bold**, *italic*, `code`,
+    [links](url), unordered bullet lists (- / *), and paragraphs.
+    """
+    lines = md.split("\n")
+    html_lines: list[str] = []
+    in_ul = False
+    in_p = False
+
+    def close_p():
+        nonlocal in_p
+        if in_p:
+            html_lines.append("</p>")
+            in_p = False
+
+    def close_ul():
+        nonlocal in_ul
+        if in_ul:
+            html_lines.append("</ul>")
+            in_ul = False
+
+    def inline(text: str) -> str:
+        text = _html_lib.escape(text)
+        text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+        text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
+        text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
+        text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
+        return text
+
+    for line in lines:
+        h3 = re.match(r"^### (.+)$", line)
+        h2 = re.match(r"^## (.+)$", line)
+        h1 = re.match(r"^# (.+)$", line)
+        li = re.match(r"^[-*] (.+)$", line)
+
+        if h3:
+            close_p(); close_ul()
+            html_lines.append(f"<h3>{inline(h3.group(1))}</h3>")
+        elif h2:
+            close_p(); close_ul()
+            html_lines.append(f"<h2>{inline(h2.group(1))}</h2>")
+        elif h1:
+            close_p(); close_ul()
+            html_lines.append(f"<h1>{inline(h1.group(1))}</h1>")
+        elif li:
+            close_p()
+            if not in_ul:
+                html_lines.append("<ul>")
+                in_ul = True
+            html_lines.append(f"<li>{inline(li.group(1))}</li>")
+        elif line.strip() == "":
+            close_p(); close_ul()
+        else:
+            close_ul()
+            if not in_p:
+                html_lines.append("<p>")
+                in_p = True
+            html_lines.append(inline(line))
+
+    close_p()
+    close_ul()
+    return "\n".join(html_lines)
+
+
+def _rows_to_table(rows: list[dict]) -> str:
+    """Render a list of dicts as an HTML table with thead/tbody."""
+    headers = list(rows[0].keys())
+    th_cells = "".join(f"<th>{_html_lib.escape(str(h))}</th>" for h in headers)
+    thead = f"<thead><tr>{th_cells}</tr></thead>"
+    tbody_rows: list[str] = []
+    for row in rows:
+        td_cells = "".join(
+            f"<td>{_html_lib.escape(str(row.get(h, '')))}</td>" for h in headers
+        )
+        tbody_rows.append(f"<tr>{td_cells}</tr>")
+    tbody = f"<tbody>{''.join(tbody_rows)}</tbody>"
+    return f"<table>{thead}{tbody}</table>"
 
 
 def _flatten_tailwind(export_dict: dict[str, Any]) -> dict[str, str]:

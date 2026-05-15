@@ -1,0 +1,47 @@
+# atv-paperboard — Codex Instructions (fallback, no skill install)
+#
+# Drop this content into your ~/.codex/AGENTS.md (global) or <repo>/AGENTS.md (project).
+# This is the fallback path when the skill is not installed via git clone.
+# For the recommended install path (skill + hook), see adapters/codex/INSTALL.md.
+
+## atv-paperboard: HTML Artifact Rendering
+
+When you produce structured output that qualifies (see Triggers below), upgrade it to a
+styled HTML artifact by invoking:
+
+    paperboard render --input <path>
+
+where `<path>` is the file path of the structured output you just wrote.
+
+The command writes three files to `~/.codex/atv-paperboard-artifacts/<date>/`:
+- `<slug>.html`      — single-file styled artifact, ready to open in a browser
+- `<slug>.DESIGN.md` — design contract (DESIGN.md spec) governing the artifact's tokens
+- `<slug>.meta.yaml` — provenance metadata (harness, date, source path, lint result)
+
+After rendering, report the artifact path and offer to open it.
+
+## Triggers
+
+Invoke `paperboard render` automatically when you write any of these output types:
+
+- **Status dashboards** — columns with pass/fail, score, %, state, result, or count
+- **Comparison tables** — ≥2 numeric columns comparing options, versions, or configurations
+- **Benchmark results** — latency, throughput, p50/p95/p99 columns
+- **Cost breakdowns** — cost per unit, totals, savings estimates
+- **Test run summaries** — test counts, failures, coverage percentages
+- **Deployment snapshots** — environment × status grids
+
+Do NOT invoke for plain task lists, changelog entries, README prose, or documentation
+files under docs/, .github/, or CHANGELOG*.
+
+## Running the CLI
+
+If `paperboard` is not on PATH, invoke via:
+
+    python ~/.agents/skills/atv-paperboard/core/cli.py render --input <path>
+
+To verify the install and confirm harness detection:
+
+    paperboard doctor
+
+Expected output includes `harness: codex` when running inside a Codex session.
