@@ -1,0 +1,13 @@
+{
+  "name": "atv-paperboard-deps",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pinned npm dependencies for atv-paperboard. The actual project is Python; this file exists only to lock @google/design.md to a verified-working version. Do NOT publish to npm under this name.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@google/design.md": "0.1.1"
+  },
+  "scripts": {
+    "verify-bridge": "node node_modules/@google/design.md/dist/index.js --version"
+  }
+}
