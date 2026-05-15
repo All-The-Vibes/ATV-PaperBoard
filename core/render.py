@@ -112,23 +112,40 @@ def render_artifact(
     # Ensure slug uniqueness within output_dir
     slug = _unique_slug(slug, output_dir)
 
-    # Export tokens from DESIGN.md via bridge (graceful degradation if missing)
+    # Export tokens from DESIGN.md.
+    #
+    # Strategy: try the Node bridge first (authoritative — full Tailwind export
+    # semantics from @google/design.md). If the bridge is unavailable for ANY
+    # reason (module missing, node missing, node_modules not installed, lint
+    # findings, JSON parse error), fall back to a pure-Python YAML reader so the
+    # render still applies design tokens. The bridge governs lint_passed; the
+    # YAML fallback assumes lint_passed=False since it can't run the upstream
+    # lint rules.
     tokens: dict[str, str] = {}
     lint_passed = False
+    bridge_ok = False
     try:
         from core import bridge as _bridge  # noqa: PLC0415
 
         export_dict = _bridge.export(design_path, fmt="tailwind")
         tokens = tokens_from_export(export_dict, tier=tier)
         lint_result = _bridge.lint(design_path)
-        # lint() returns {"findings": [...], "summary": {...}}
         findings = lint_result.get("findings", [])
         blocking = [f for f in findings if isinstance(f, dict) and f.get("severity") in ("error", "warning")]
         lint_passed = len(blocking) == 0
-    except ImportError:
-        # TODO: Remove once bridge.py is delivered by the parallel agent.
-        tokens = {}
-        lint_passed = False
+        bridge_ok = True
+    except Exception:
+        bridge_ok = False
+
+    if not bridge_ok:
+        # Pure-Python fallback: parse the DESIGN.md YAML frontmatter directly
+        # and synthesize a Tailwind-shaped dict so tokens_from_export() still
+        # produces the right CSS variables for the active tier.
+        try:
+            synthetic_export = _export_from_design_yaml(design_path)
+            tokens = tokens_from_export(synthetic_export, tier=tier)
+        except Exception:
+            tokens = {}
 
     # Resolve destination paths
     html_path = output_dir / f"{slug}.html"
@@ -206,6 +223,75 @@ def tokens_from_export(export_dict: dict[str, Any], tier: str = "pico") -> dict[
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
+
+
+def _export_from_design_yaml(design_path: Path) -> dict[str, Any]:
+    """Pure-Python fallback that reads DESIGN.md YAML frontmatter and synthesizes
+    a Tailwind-shaped export dict compatible with ``_flatten_tailwind()``.
+
+    Used when the @google/design.md Node bridge is unavailable (node missing,
+    node_modules not installed, etc.). The fallback supports color and typography
+    tokens — the same subset v0.1.0 promises to render. Spacing/rounded tokens
+    are read but not currently consumed by the Pico/Daisy CSS-var maps.
+
+    Frontmatter shape expected (matches designs/*.DESIGN.md)::
+
+        colors:
+          primary: "#1A1A1A"
+          secondary: "#3B82F6"
+          ...
+        typography:
+          body: {fontFamily: "system-ui, ...", fontSize: 16px, ...}
+          heading: {...}
+          mono: {...}
+
+    Returns the same shape ``bridge.export(fmt='tailwind')`` returns so the
+    downstream ``tokens_from_export()`` codepath stays identical.
+    """
+    text = Path(design_path).read_text(encoding="utf-8")
+    # Frontmatter is the block between the first two '---' lines.
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}
+    frontmatter_yaml = text[3:end]
+    try:
+        fm = yaml.safe_load(frontmatter_yaml) or {}
+    except yaml.YAMLError:
+        return {}
+    if not isinstance(fm, dict):
+        return {}
+
+    export: dict[str, Any] = {"colors": {}, "fontFamily": {}, "fontSize": {}}
+
+    # Colors: scalar hex → {"DEFAULT": "#...", "500": "#..."} so both shaded
+    # and unshaded forms flatten correctly.
+    colors = fm.get("colors") or {}
+    if isinstance(colors, dict):
+        for name, value in colors.items():
+            if isinstance(value, str):
+                export["colors"][name] = {"DEFAULT": value, "500": value}
+            elif isinstance(value, dict):
+                export["colors"][name] = value
+
+    # Typography: pull fontFamily and fontSize from the body/heading/mono blocks.
+    typography = fm.get("typography") or {}
+    if isinstance(typography, dict):
+        for role_name, role_key in (("sans", "body"), ("heading", "heading"), ("mono", "mono")):
+            block = typography.get(role_key)
+            if not isinstance(block, dict):
+                continue
+            ff = block.get("fontFamily")
+            if isinstance(ff, str):
+                # Split comma-separated list into the array form _flatten_tailwind expects.
+                export["fontFamily"][role_name] = [s.strip().strip('"') for s in ff.split(",")]
+            fs = block.get("fontSize")
+            if isinstance(fs, (str, int, float)):
+                size_key = "base" if role_key == "body" else role_key
+                export["fontSize"][size_key] = str(fs)
+
+    return export
 
 
 def _detect_harness_safe() -> str:
@@ -337,7 +423,22 @@ def _rows_to_table(rows: list[dict]) -> str:
 
 
 def _flatten_tailwind(export_dict: dict[str, Any]) -> dict[str, str]:
-    """Flatten a Tailwind config dict into ``--color-primary-500`` style keys."""
+    """Flatten a Tailwind config dict into ``--color-primary-500`` style keys.
+
+    Accepts both shapes the @google/design.md CLI may emit:
+      1. Flat:   {"colors": {...}, "fontFamily": {...}, ...}
+      2. Nested: {"theme": {"extend": {"colors": {...}, ...}}}   ← Tailwind v3 config
+
+    The nested form is what `design.md export --format tailwind` produces today;
+    the flat form is preserved for forward compatibility and unit-test fixtures.
+    """
+    # Unwrap theme.extend wrapper if present (Tailwind v3 config shape).
+    theme = export_dict.get("theme")
+    if isinstance(theme, dict):
+        extend = theme.get("extend")
+        if isinstance(extend, dict):
+            export_dict = extend
+
     flat: dict[str, str] = {}
 
     colors = export_dict.get("colors", {})

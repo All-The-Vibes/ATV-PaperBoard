@@ -66,7 +66,10 @@ def regenerate_gallery(harness: str | None = None, artifact_dir: Path | None = N
             }
         )
 
-    # Export tokens from the project default DESIGN.md (graceful degradation).
+    # Export tokens from the project default DESIGN.md.
+    # Strategy mirrors core/render.py: try the Node bridge first; on ANY failure
+    # fall back to the pure-Python YAML reader so the gallery still themes
+    # correctly when @google/design.md is not installed.
     tokens: dict[str, str] = {}
     try:
         from core import bridge as _bridge  # noqa: PLC0415
@@ -74,8 +77,17 @@ def regenerate_gallery(harness: str | None = None, artifact_dir: Path | None = N
 
         export_dict = _bridge.export(_DEFAULT_DESIGN, fmt="tailwind")
         tokens = tokens_from_export(export_dict, tier="pico")
-    except (ImportError, Exception):  # noqa: BLE001
-        tokens = {}
+    except Exception:  # noqa: BLE001
+        try:
+            from core.render import (  # noqa: PLC0415
+                _export_from_design_yaml,
+                tokens_from_export,
+            )
+
+            synthetic_export = _export_from_design_yaml(_DEFAULT_DESIGN)
+            tokens = tokens_from_export(synthetic_export, tier="pico")
+        except Exception:  # noqa: BLE001
+            tokens = {}
 
     # Render gallery template.
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)), autoescape=True)
