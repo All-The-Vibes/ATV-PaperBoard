@@ -1,11 +1,12 @@
-# atv-paperboard — v1 Build Specification (v4.1)
+# atv-paperboard — v1 Build Specification (v4.2)
 
-**Status:** draft-v4.1 (4-harness expansion, deep-research-corrected) · **Date:** 2026-05-14 · **License:** Apache-2.0
+**Status:** v4.2 (delivered as v0.1.0-preview) · **Date:** 2026-05-14 · **License:** Apache-2.0
 **Research lineage:**
 - v1 → v2: integrated Google DESIGN.md format
 - v2 → v3: adversarial-review + empirical CLI probe
 - v3 → v4: expanded scope to 4 harnesses (Claude Code, Codex CLI, OpenCode, GitHub Copilot)
 - v4 → v4.1: parallel deep-research pass against live docs corrected per-harness code blocks (§2.1 hooks wrapper + timeout unit, §2.2 TOML syntax + openai.yaml schema, §2.3 OpenCode plugin shape × 5 bugs), fixed @google/design.md license attribution, added §17 hook heuristic, §18 starter attribution schema, tightened auto-detect order
+- v4.1 → v4.2: re-scoped to v0.1.0-preview = 2 native adapters (Claude Code, Codex) + 1 recipe (Copilot GH Actions); OpenCode deferred to v0.1.1 after Stage 4 found 5 breaking defects in the SPEC v4 OpenCode TS plugin that needed an empirical-verification cycle the schedule didn't accommodate.
 **Research sources:**
 - `obsidian-vault/raw/research/harness-synthesis-brief-2026-05-14.md`
 - `obsidian-vault/raw/research/harness-claude-code-plugin-model-2026-05-14.md`
@@ -26,9 +27,9 @@ Part of the **ATV** family (Compound Engineering / gstack / Karpathy Guidelines 
 
 ## 0. North Star
 
-> **One Python core, four harness adapters, one design contract.** The plugin justifies its existence against raw-prompting by doing four things prompting cannot reliably do: Enforce, Render, Persist, Compound — **and it does them identically across every major agentic coding harness**.
+> **One Python core, **two native harness adapters + one CI recipe**, one design contract.** The plugin justifies its existence against raw-prompting by doing four things prompting cannot reliably do: Enforce, Render, Persist, Compound — **and it does them identically across every major agentic coding harness**.
 
-Any v1 feature that doesn't strengthen a pillar or expand harness coverage is out of scope.
+Any v1 feature that doesn't strengthen a pillar or expand harness coverage to additional harnesses is out of scope.
 
 ### 0.1 The Four Pillars (harness-invariant)
 
@@ -43,9 +44,10 @@ Any v1 feature that doesn't strengthen a pillar or expand harness coverage is ou
 
 | Pattern | Harnesses | Mechanism |
 |---|---|---|
-| **Native plugin** | Claude Code, Codex CLI, OpenCode | Per-harness wrapper file (manifest/loader); same SKILL.md payloads; same Python core via subprocess. |
+| **Native plugin** | Claude Code, Codex CLI | Per-harness wrapper file (manifest/loader); same SKILL.md payloads; same Python core via subprocess. |
 | **Instructions + CLI** | Codex CLI fallback, GitHub Copilot | `AGENTS.md` (Codex) or `.github/copilot-instructions.md` (Copilot) directs the agent to invoke a local CLI. |
 | **Coding-Agent hook** | GitHub Copilot (headless) | `.github/workflows/copilot-coding-agent-paperboard.yml` runs the CLI in Actions for PR-attached artifacts. |
+| **Deferred (v0.1.1)** | OpenCode | Native TS plugin (5 breaking SPEC v4 defects found in Stage 4; empirical-verification cycle required). |
 
 ### 0.3 Empirical Verifications (all four harnesses, pre-SPEC)
 
@@ -99,15 +101,13 @@ atv-paperboard/
 │   │   ├── hooks/hooks.json                 # PostToolUse → detect-artifact-candidate
 │   │   ├── agents/artifact-reviewer.md
 │   │   └── INSTALL.md                       # `/plugin marketplace add` + `/plugin install`
-│   ├── codex/
-│   │   ├── agents/openai.yaml
-│   │   ├── AGENTS.md.template               # instructions snippet for fallback users
-│   │   └── INSTALL.md                       # `git clone` into ~/.agents/skills/
-│   ├── opencode/
-│   │   ├── opencode.plugin.ts               # JS Plugin factory → subprocess(core/cli.py)
-│   │   ├── opencode.json.template           # config entry
-│   │   └── INSTALL.md                       # `npm i` + opencode.json edit
-│   └── copilot/
+│   └── codex/
+│       ├── agents/openai.yaml
+│       ├── AGENTS.md.template               # instructions snippet for fallback users
+│       └── INSTALL.md                       # `git clone` into ~/.agents/skills/
+│
+├── recipes/                                 # CI/workflow recipes (not adapters)
+│   └── github-actions/
 │       ├── copilot-instructions.md.template # for ${repo}/.github/copilot-instructions.md
 │       ├── workflow.yml.template            # for ${repo}/.github/workflows/...
 │       └── INSTALL.md                       # how to wire into a GitHub repo
@@ -142,7 +142,7 @@ atv-paperboard/
         └── violations/
 ```
 
-**Key change from SPEC v3:** the plugin is now structured as `core/` (Python, harness-agnostic) + `skills/` (SKILL.md payloads, ported verbatim to 3 native harnesses) + `adapters/` (one folder per harness, thin wrappers). The same SKILL.md files end up inside Claude Code's `plugin install`, Codex's `~/.agents/skills/`, and OpenCode's `.opencode/skills/` via build-time copy steps.
+**Key change from SPEC v3:** the plugin is now structured as `core/` (Python, harness-agnostic) + `skills/` (SKILL.md payloads, ported verbatim to 2 native harnesses) + `adapters/` (one folder per native harness, thin wrappers) + `recipes/` (CI templates for harnesses without a local plugin model). The same SKILL.md files end up inside Claude Code's `plugin install` and Codex's `~/.agents/skills/` via build-time copy steps. OpenCode support is deferred to v0.1.1.
 
 ---
 
@@ -234,55 +234,9 @@ git clone https://github.com/<org>/atv-paperboard ~/.agents/skills/atv-paperboar
 
 **Fallback path (no skill install):** drop `adapters/codex/AGENTS.md.template` content into the user's `AGENTS.md` directing Codex to invoke `paperboard render` as a shell command.
 
-### 2.3 OpenCode (`adapters/opencode/`)
+### 2.3 GitHub Copilot (`recipes/github-actions/` — recipe, not an adapter)
 
-**Plugin loader** (`opencode.plugin.ts`):
-```ts
-// adapters/opencode/opencode.plugin.ts
-// Schema source: @opencode-ai/plugin@1.14.51 type definitions
-import type { Plugin } from "@opencode-ai/plugin";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { join, dirname } from "node:path";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export const server: Plugin = async (input) => {
-  return {
-    "tool.execute.after": async (toolInput, toolOutput) => {
-      if (toolInput.tool === "Write") {
-        spawn("python", [
-          join(__dirname, "../core/cli.py"),
-          "detect-artifact-candidate",
-          JSON.stringify(toolOutput.output),
-        ], { stdio: "inherit", detached: true });
-      }
-    },
-  };
-};
-```
-
-(SPEC v4 had **five** runtime-fatal bugs in this block, all fixed above. Source: deep-research stage 4.
-1. Package name was `@opencode/plugin` (404 on npm) — real package is `@opencode-ai/plugin@1.14.51`.
-2. Export name was `paperboardPlugin` — OpenCode auto-discovers the `server` named export on a `PluginModule`. Anything else is ignored.
-3. The `Plugin` type is `async` and returns `Promise<Hooks>` directly — not a non-async function returning `{ hooks }`.
-4. `ctx.pluginDir` does not exist on `PluginInput`. Resolve own directory via `import.meta.dirname`.
-5. Hook handler signature is `(input, output)` two-arg — SPEC v4 read `input.output` which is `undefined`. Tool result is `output.output`.)
-
-**Persistence:** `${OPENCODE_CONFIG_DIR}/atv-paperboard-artifacts/<date>/...` (per Track 4: `OPENCODE_CONFIG_DIR` is documented and stable).
-
-**Skills:** copied verbatim from `skills/` to `.opencode/skills/` at build/install time. OpenCode's docs explicitly state it reads "Claude-compatible paths" so the SKILL.md frontmatter contract is identical.
-
-**Install:**
-```bash
-npm i -g atv-paperboard
-# Edit ~/.config/opencode/opencode.json to add:
-# { "plugin": ["atv-paperboard"] }
-```
-
-(Config key is `"plugin"` singular per the `Config` type — SPEC v4 had `"plugins"` plural. Source: deep-research stage 4.)
-
-### 2.4 GitHub Copilot (`adapters/copilot/`)
+Copilot has no local plugin path for filesystem + browser access (see §0.3); v0.1.0-preview ships this as a GitHub Actions recipe rather than a 4th adapter.
 
 **No local plugin path via Copilot Extensions.** Track 3 + stage 5 confirmed Copilot Extensions are *remote HTTPS services* with no filesystem or browser access. The VS Code Chat Participant API *does* give local FS + browser access, but ships as a VSIX and is deferred to v0.2 (the instructions+CLI pattern reaches Coding Agent users too, which the Chat Participant alone doesn't). Integration for v0.1.0 is via two templates:
 
@@ -328,15 +282,18 @@ jobs:
 ```bash
 # In your repo:
 pip install atv-paperboard
-cp $(python -c "import atv_paperboard; print(atv_paperboard.adapter_path('copilot'))")/{copilot-instructions.md.template,workflow.yml.template} \
-   .github/
+cp recipes/github-actions/*.template .github/
 ```
+
+### 2.4 OpenCode (deferred to v0.1.1)
+
+OpenCode was scoped as the 3rd native adapter in SPEC v4.1 (§2.3 in that version). During Stage 4 of the deep-research pass, five runtime-fatal bugs were found in the SPEC v4 TypeScript plugin block: wrong package name (`@opencode/plugin` → `@opencode-ai/plugin@1.14.51`), wrong export name, wrong `Plugin` type signature, non-existent `ctx.pluginDir` field, and wrong hook-handler argument shape. These defects required an empirical-verification cycle (real install, live plugin execution) that the v0.1.0-preview schedule did not accommodate. The corrected plugin block is preserved in git history at the v4.1 SPEC commit. It will be implemented and verified in v0.1.1.
 
 ---
 
 ## 3. The Universal Python Core (`core/`)
 
-Same logic as SPEC v3's skills/bin shims, but reorganized as importable Python modules. The standalone CLI (`core/cli.py`) is the universal entry point that all 4 adapters subprocess into.
+Same logic as SPEC v3's skills/bin shims, but reorganized as importable Python modules. The standalone CLI (`core/cli.py`) is the universal entry point that all adapters subprocess into.
 
 ### 3.1 `core/detect.py` — Auto-detect harness
 
@@ -372,6 +329,8 @@ def detect_harness() -> str:
         return "copilot-ide"
     return "standalone"
 ```
+
+**Note (v0.1.0-preview):** the `opencode` and `copilot-ide` return values are reserved for v0.1.1+. The v0.1.0-preview product only acts on `claude-code | codex | copilot-coding-agent | standalone`; `opencode` and `copilot-ide` fall through to `standalone` behavior in all current code paths.
 
 ### 3.2 `core/persist.py` — Harness-aware paths
 
@@ -428,7 +387,7 @@ Per Track 4 (OpenCode docs say it reads "Claude-compatible paths") and Track 2 (
 
 ---
 
-## 6. Build Phases (v4 estimate: 11 days)
+## 6. Build Phases (v0.1.0-preview delivered; v0.1.1 OpenCode budget: 2 days)
 
 The shared-core architecture means harness expansion is mostly *adapter* work, not *core* duplication.
 
@@ -481,6 +440,10 @@ The shared-core architecture means harness expansion is mostly *adapter* work, n
 - USPTO basic search on "atv-paperboard" + "paperboard"
 - Full Phase 0–6 test matrix runs green across all 4 harnesses
 - Tag v0.1.0; publish to PyPI (`atv-paperboard`); push to GitHub; submit Claude Code marketplace PR
+
+### Phase 7a — Real-world test pass (deep-research-driven)
+
+10 bugs surfaced and fixed by driving the actual CLI on 3 real-world fixtures (build-status, harness-comparison, bug-hunt). All four pillars (Enforce / Render / Persist / Compound) verified end-to-end. Bugs RW-1 through RW-10 resolved same-session.
 
 **Total: 11 working days.** Same as SPEC v3's single-harness estimate — the universal-core architecture pays for cross-harness coverage almost for free.
 
@@ -597,6 +560,8 @@ Phase 0 is *not* a scaffolding day — it is a verification day. Every claim bel
 |---|---|---|---|
 | V1 | `@google/design.md@0.1.1` lints a minimal DESIGN.md and emits parseable JSON via `node <bin>/dist/index.js lint --format json` | Run on `fixtures/compliant/minimal.DESIGN.md`; assert `findings == []` | ENFORCE pillar collapses; switch to OfflineMode subset (broken-ref + missing-sections + missing-typography) |
 | V2 | `node <bin>/dist/index.js export --format css-tailwind` produces tokens consumable after the Pico/daisyUI rename layer | Run on `paperboard.DESIGN.md`; assert at least 5 `--color-*` and 3 `--font-*` vars present | RENDER pillar tier templates need redesign; consider single-tier v0.1.0 |
+
+**V2 addendum (empirically corrected at execution time):** `@google/design.md` export emits only `tailwind | dtcg` formats — the `css-tailwind` format flag is not available. The token-rename layer in `core/render.py` bridges exported `tailwind` tokens to Pico/daisyUI CSS variables.
 | V3 | Hook command subprocess in Claude Code inherits `CLAUDE_PLUGIN_DATA` | Install plugin into a real Claude Code session; trigger PostToolUse Write; assert log line contains a real path | PERSIST pillar broken for Claude Code; fallback to `CLAUDE_PLUGIN_ROOT/../data` or filesystem walk |
 | V4 | Codex `[[hooks.PostToolUse]]` block fires on Write tool with `matcher = "^Write$"` | Set hook in real Codex session; perform a Write; assert log line contains the right TOOL_OUTPUT | Fall back to AGENTS.md instructions-only pattern for v0.1.0 Codex |
 | V5 | `core/detect.py` returns the correct harness in 5 mock environments (cc, codex, opencode, copilot-CI, standalone) | `pytest tests/test_core_detect.py` | T6 mitigation insufficient; tighten precedence further |
@@ -654,9 +619,7 @@ The lint rule `tests/test_starter_attribution.py` MUST fail if any file in `desi
 - USPTO TESS search on "paperboard" and "atv" in IC 009/042. Stage 6 couldn't reach the JS-heavy UI; manual lookup, ~10 minutes.
 - Confirm publishing GitHub org is not `All-The-Vibes` (collision on repo name `ATV-PaperBoard`).
 - Counsel sign-off on brand-derivative starters per §17.
-- Initialize git (`git init`) — project root has no `.git` as of v4.1 patch time.
-- Commit `pyproject.toml` + `package.json` (with `@google/design.md@0.1.1` exact-pinned) + `package-lock.json` — closes SPEC-review action #7.
 
 ---
 
-*~4700 words. SPEC v4.1 — deep-research-corrected against live docs; per-harness code blocks rewritten; new §15–§18 close adversarial-review and stage-7 open items. Phase 0 ready on user approval **and** completion of §18 carry-forward.*
+*~4700 words. SPEC v4.2 — re-scoped to v0.1.0-preview (2 native adapters + 1 recipe); OpenCode deferred to v0.1.1; Phase 7a real-world test pass documented; V2 export format corrected empirically. v0.1.0-preview shipped 2026-05-15 (single-session execution; 93 tests passing). v0.1.1 roadmap: OpenCode adapter, USPTO TESS clearance, public release.*
