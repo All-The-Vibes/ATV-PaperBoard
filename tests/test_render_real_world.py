@@ -15,6 +15,7 @@ import yaml
 
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
 PAPERBOARD_DESIGN = Path(__file__).parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
+MERIDIAN_DESIGN = Path(__file__).parent.parent / "core" / "designs" / "meridian.DESIGN.md"
 
 
 def _render(input_data: dict, design: Path = MINIMAL_DESIGN, tier: str = "pico") -> tuple[dict, Path]:
@@ -52,6 +53,17 @@ def test_body_md_input_converted():
     assert "<h1>Hello</h1>" in html
     assert "<p>" in html
     assert "World" in html
+
+
+def test_body_md_tables_get_responsive_labels():
+    triple = _render({
+        "title": "MD Table Test",
+        "body_md": "| Skill | Source |\n|---|---|\n| /ce-work | compound-engineering |",
+    })
+    html = triple["_html"]
+    assert 'class="md"' in html
+    assert 'data-label="Skill"' in html
+    assert 'data-label="Source"' in html
 
 
 def test_body_html_passthrough():
@@ -117,3 +129,80 @@ def test_meta_lint_passed_with_info_only():
         assert meta["lint_passed"] is True, f"lint_passed was False; meta={meta}"
     except ImportError:
         pytest.skip("core.bridge not available; skipping lint_passed assertion")
+
+
+def test_default_design_resolves_to_paperboard_style():
+    """CLI default should be PaperBoard; Meridian is opt-in via --style."""
+    from core.cli import _resolve_design
+
+    assert _resolve_design(None, style_arg=None).name == "paperboard.DESIGN.md"
+    assert _resolve_design(None, style_arg="meridian").name == "meridian.DESIGN.md"
+    assert _resolve_design(None, style_arg="atv").name == "atv.DESIGN.md"
+
+
+def test_markdown_front_metadata_is_topbar_context(tmp_path: Path):
+    """Proposal metadata should not become the visual lede paragraph."""
+    from core.cli import _load_input
+
+    md = tmp_path / "proposal.md"
+    md.write_text(
+        "# Harness Alignment Proposal\n\n"
+        "**Author:** Steph Schofield\n"
+        "**Status:** Draft for discussion\n"
+        "**Decision requested:** today\n\n"
+        "A proposal for how we standardize the harness.\n",
+        encoding="utf-8",
+    )
+
+    data = _load_input(str(md))
+    assert data["title"] == "Harness Alignment Proposal"
+    assert data["brand"] == "Harness Alignment Proposal"
+    assert data["status_tag"] == "Draft for discussion"
+    assert "**Author:**" not in data["body_md"]
+    assert "A proposal for how we standardize" in data["body_md"]
+
+
+def test_atv_proposal_components_render():
+    """Proposal-style components should render as designed document primitives."""
+    if not MERIDIAN_DESIGN.exists():
+        pytest.skip("designs/meridian.DESIGN.md not found")
+
+    triple = _render(
+        {
+            "title": "Proposal Component Test",
+            "sections": [
+                {
+                    "kind": "decision-card",
+                    "kicker": "Decision requested",
+                    "title": "Adopt Option C.",
+                    "body": "Use the curated package.",
+                    "items": ["Lean package", "Team-owned bar", "Private personal layer"],
+                },
+                {
+                    "kind": "option-cards",
+                    "rows": [
+                        {"label": "Option A", "title": "Status quo", "body": "Mixed harness.", "verdict": "Not viable."},
+                        {"label": "Option C", "title": "Curated package", "body": "Right-sized.", "verdict": "Proposed.", "proposed": True},
+                    ],
+                },
+                {
+                    "kind": "file-tree",
+                    "rows": [
+                        {"path": "repo/", "note": "root", "kind": "dir"},
+                        {"path": ".github/skills/", "note": "team standard", "kind": "dir", "depth": 1},
+                    ],
+                },
+                {
+                    "kind": "status-table",
+                    "rows": [{"phase": "Review", "status": "PASS"}],
+                },
+            ],
+        },
+        design=MERIDIAN_DESIGN,
+        tier="atv",
+    )
+    html = triple["_html"]
+    assert 'class="decision-card"' in html
+    assert 'class="option-card proposed"' in html
+    assert 'class="file-tree"' in html
+    assert 'data-label="status"' in html

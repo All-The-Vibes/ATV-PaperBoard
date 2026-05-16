@@ -77,8 +77,8 @@ either `COPILOT_HOME` is unset and the plugin is not under
 
    ```
    [atv-paperboard] This looks like a data artifact.
-   To render it:
-     paperboard render --input <path>
+   To render it from your agent:
+     /paperboard <path> --style paperboard
    ```
 
    If the reminder does not appear within one tool turn, check

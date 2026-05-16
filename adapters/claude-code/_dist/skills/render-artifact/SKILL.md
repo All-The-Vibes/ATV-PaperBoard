@@ -10,18 +10,30 @@ description: >
 
 Converts structured LLM output into a beautiful, linted HTML artifact governed by a DESIGN.md.
 
+The preferred agent-facing command for normal user requests is `/paperboard`.
+This is the low-level render skill for adapters, hooks, and direct recovery workflows.
+
 ## Usage
 
 ```
-paperboard render --input <path-or-> [--design <name|path|url>] [--tier atv|pico|daisy] [--no-open]
+paperboard render --input <path-or-> [--style paperboard|meridian|atv] [--design <name|path|url>] [--tier atv|pico|daisy] [--no-open]
 ```
 
-## Tier selection
+## Style selection
 
-- **Default: `atv`** — the dark designed-document tier; use for dashboards, reports, and
-  any rich multi-section output. This is the right answer in almost all cases.
-- **`pico` / `daisy`** — light-document tiers; pick only when the target audience explicitly
-  wants a lightweight, framework-styled page.
+- **Default: `paperboard`** — clean, neutral house style for shareable agent artifacts,
+  simple docs, and tables.
+- **`meridian`** — editorial proposal and decision-doc style for plans, reviews, and memos.
+- **`atv`** — dense technical engineering style for reports, debugging notes, architecture
+  docs, and comparisons.
+
+Use `paperboard styles list` or `paperboard styles show <style>` to inspect the presets.
+
+## Advanced selection
+
+- **`--design <name|path|url>`** — raw DESIGN.md override. This wins over `--style`.
+- **`--tier atv|pico|daisy`** — renderer/template override. Omit unless the user asks for a
+  lightweight framework-styled page.
 
 ## When to invoke
 
@@ -31,7 +43,8 @@ paperboard render --input <path-or-> [--design <name|path|url>] [--tier atv|pico
 ## Steps
 
 1. Collect the input path (or pipe JSON/Markdown via stdin with `--input -`).
-2. Optionally specify `--design` (starter name, path, or URL) and `--tier` (omit for `atv`).
+2. Optionally specify `--style` (omit for `paperboard`). Use `--design` only for advanced
+   raw DESIGN.md overrides.
 3. Run the command; report the triple paths and slug from stdout.
 4. If `--no-open` was NOT passed and the environment is non-headless, the browser opens automatically.
 

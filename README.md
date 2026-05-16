@@ -125,6 +125,32 @@ cp recipes/github-actions/*.template .github/
 
 The workflow installs both `atv-paperboard` (pip) and `@google/design.md` (npm) in CI — no extra setup on your machine. Full instructions: [`recipes/github-actions/INSTALL.md`](recipes/github-actions/INSTALL.md)
 
+## Agent-first usage
+
+PaperBoard is meant to be used from the agent you already use. Install it once,
+then ask the agent to render a file with `/paperboard`.
+
+```text
+/paperboard path/to/file.md
+/paperboard path/to/proposal.md --style meridian
+/paperboard path/to/report.json --style atv
+/paperboard styles
+/paperboard gallery
+```
+
+The CLI is the engine, not the primary human interface. The `/paperboard` skill
+maps those agent commands to:
+
+```bash
+paperboard render --input <path> --style <style>
+paperboard styles list
+paperboard gallery
+```
+
+Default style is `paperboard`. Use `meridian` for proposals and decision memos.
+Use `atv` for dense technical reports. Power users can still call the CLI
+directly for CI, scripting, debugging, or unsupported agents.
+
 ## Quick start (standalone — no harness needed)
 
 Requires Python 3.10+ and Node.js 18+.
@@ -133,13 +159,13 @@ Requires Python 3.10+ and Node.js 18+.
 pip install atv-paperboard
 npm install -g @google/design.md@0.1.1
 
-# Render a sample artifact (default tier is `atv` — dark designed-document)
+# Render a sample artifact (default style is `paperboard`)
 echo '{"title":"Hello","columns":["item","status"],"rows":[["paperboard","ok"]]}' | \
   paperboard render --input - --output-dir ./out
 paperboard gallery --output-dir ./out
 ```
 
-You'll get `out/<slug>.html`, `out/<slug>.DESIGN.md`, `out/<slug>.meta.yaml`, and `out/gallery.html` — a single neubrutalism-styled artifact + an auto-regenerated compounding gallery. The browser auto-opens on render unless `--no-open` is passed or the environment is headless.
+You'll get `out/<slug>.html`, `out/<slug>.DESIGN.md`, `out/<slug>.meta.yaml`, and `out/gallery.html` — a single PaperBoard-styled artifact + an auto-regenerated compounding gallery. The browser auto-opens on render unless `--no-open` is passed or the environment is headless.
 
 To work on paperboard itself (instead of just using it), clone the repo and run `npm install && pip install -e .` from the root — that's the only path that exercises `core/`'s source directly.
 
@@ -170,11 +196,31 @@ Every `paperboard render` writes three files that travel together:
 
 The lint isn't generic "is this valid markdown" — it's a token-trace. If your HTML uses `#e63946` and that hex never appears in any token in the DESIGN.md, lint fails with a `fail-class` of `color-not-in-contract`. That's how design quality stays consistent across renders without policing prose.
 
-### The render tiers (Pico vs daisyUI)
+### Style presets
 
-Two Jinja2 templates ship out of the box (plus the default `atv` tier):
+Most users should pick a style, not a raw renderer tier.
 
-- **`atv-tier`** — dark designed-document presentation; the canonical render that shows off the neubrutalism palette. **Default.** Use for dashboards, reports, and any rich multi-section output — the right answer in almost all cases.
+```bash
+paperboard render --style paperboard   # default
+paperboard render --style meridian     # proposals and decision memos
+paperboard render --style atv          # dense technical docs
+paperboard styles list
+paperboard styles show meridian
+```
+
+| Style | What it is for |
+|---|---|
+| `paperboard` | Default. Clean, neutral house style for shareable agent artifacts, simple docs, and tables. |
+| `meridian` | Editorial proposal and decision-doc style for plans, reviews, and memos that need to feel authored. |
+| `atv` | Dense technical engineering style for reports, debugging notes, architecture docs, and comparisons. |
+
+`--design <name|path|url>` is the advanced escape hatch and overrides `--style`.
+
+### The render tiers (ATV vs Pico vs daisyUI)
+
+Three Jinja2 templates ship out of the box:
+
+- **`atv-tier`** — dark designed-document presentation. **Default tier for bundled styles.** Use for dashboards, reports, proposals, and any rich multi-section output.
 - **`pico-tier`** — minimal, classless CSS via [Pico](https://picocss.com/). Sub-20KB HTML. Use only when the target audience explicitly wants a lightweight, framework-styled document.
 - **`daisy-tier`** — richer component palette via [daisyUI](https://daisyui.com/). Use for marketing-grade hero artifacts.
 
@@ -240,7 +286,10 @@ A naive PostToolUse hook on `Write` would fire on every markdown table the agent
 | **Copilot Coding Agent** | GitHub-hosted agent on PRs | Repo-level instructions + workflow YAML | ✅ via `recipes/github-actions/` |
 | **Copilot CLI** | Interactive `copilot` terminal agent on your machine | Full local plugin model (agents + skills + hooks + MCP) | ✅ via `adapters/copilot-cli/` |
 
-The Copilot CLI adapter is a native plugin: a directory laid out as `agents/`, `skills/`, `hooks.json`, optional `.mcp.json`. There is no `plugin.json` — the **presence** of those well-known files is the manifest.
+The Copilot CLI adapter is a native plugin: a directory laid out with
+`plugin.json`, `agents/`, `skills/`, `hooks.json`, and optional `.mcp.json`.
+The manifest points Copilot at the same shared skills and hook entrypoints used
+by the other adapters.
 
 **Hook event names** (Copilot CLI accepts both camelCase and PascalCase): `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `preToolUse`, `postToolUse`, `errorOccurred`, `agentStop`.
 
@@ -284,6 +333,8 @@ The contract is hostile to a few specific failure modes:
 
 ```
 atv-paperboard/
+├── SKILL.md                                 # Codex git-clone entrypoint: /paperboard
+│
 ├── core/                                    # SHARED Python core (harness-agnostic)
 │   ├── bridge.py                            # node + @google/design.md wrapper
 │   ├── render.py                            # html generation, tier templates, token-rename
@@ -295,6 +346,7 @@ atv-paperboard/
 │   └── cli.py                               # `paperboard` standalone CLI (universal)
 │
 ├── skills/                                  # SHARED SKILL.md payloads (3 harnesses portable)
+│   ├── paperboard/SKILL.md                  # preferred agent-facing /paperboard command
 │   ├── render-artifact/SKILL.md
 │   ├── validate-artifact/SKILL.md
 │   ├── regenerate-artifact/SKILL.md
@@ -309,26 +361,35 @@ atv-paperboard/
 │   └── github-actions/                      # copilot-instructions.md + workflow.yml templates
 │
 ├── designs/
-│   ├── paperboard.DESIGN.md                 # default (dialed-back neubrutalism)
+│   ├── paperboard.DESIGN.md                 # default PaperBoard style
+│   ├── meridian.DESIGN.md                   # editorial proposal / decision-doc style
+│   ├── atv.DESIGN.md                        # dense technical engineering style
 │   ├── starters/                            # stripi-, lin-ear-, vercel-inspired (attributed)
 │   └── glass.DESIGN.md                      # opt-in premium tier
 │
+├── styles/
+│   ├── paperboard/style.yaml                # default style registry entry
+│   ├── meridian/style.yaml
+│   └── atv/style.yaml
+│
 ├── templates/
-│   ├── atv-tier.html.j2                     # default — dark designed-document
+│   ├── atv-tier.html.j2                     # default tier — dark designed-document
 │   ├── pico-tier.html.j2
 │   ├── daisy-tier.html.j2
 │   └── gallery.html.j2
 │
 ├── examples/                                # 3 real artifact triples + gallery
-└── tests/                                   # 130 passing, 2 live-harness gates skipped
+└── tests/                                   # pytest coverage for core, CLI, adapters, and render fidelity
 ```
 
 The same SKILL.md files end up inside Claude Code's `/plugin install`, Codex's `~/.agents/skills/`, and Copilot CLI's `--plugin-dir` via per-adapter build steps. Every adapter and recipe invokes the same `core/cli.py` entry point via subprocess.
 
-## CLI surface
+## CLI surface used by the skills
 
 ```bash
-paperboard render [--design <name|path|url>] [--tier atv|pico|daisy] [--input <path>]
+paperboard render [--style paperboard|meridian|atv] [--design <name|path|url>] [--tier atv|pico|daisy] [--input <path>]
+paperboard styles list
+paperboard styles show <style>
 paperboard validate <slug>
 paperboard regenerate <slug>
 paperboard gallery
@@ -351,6 +412,3 @@ Apache-2.0. See [LICENSE](LICENSE).
 ## Contributing
 
 PRs welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for project layout, dev setup, test markers, lint config, branching, commit conventions, recipes for common contributions (new harness adapter, new design starter, new CLI subcommand), and where to file bug reports vs security issues. No CLA — inbound = outbound under Apache-2.0.
-
-
-

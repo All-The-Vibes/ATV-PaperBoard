@@ -51,8 +51,8 @@ You should see `atv-paperboard` in the output.
 2. Check stderr — you should see a line like:
 
    ```
-   [atv-paperboard] This looks like a data artifact. To render it:
-     paperboard render --input <path>
+   [atv-paperboard] This looks like a data artifact. To render it from your agent:
+     /paperboard <path> --style paperboard
    ```
 
 3. Or, from a Bash tool:

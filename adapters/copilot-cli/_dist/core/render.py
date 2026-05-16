@@ -550,6 +550,83 @@ def _emit_steps(s: dict[str, Any]) -> str:
     return f'<div class="steps">{"".join(row_html)}</div>'
 
 
+def _emit_decision_card(s: dict[str, Any]) -> str:
+    """`decision-card`: decision-first editorial panel.
+
+    Fields: {kicker, title, body, items}. Use near the top of proposal-style
+    artifacts so the requested decision is visible before the supporting detail.
+    """
+    kicker = s.get("kicker", "")
+    title = s.get("title", "")
+    body = s.get("body", "")
+    items = s.get("items", [])
+
+    kicker_html = f'<div class="decision-kicker">{_e(kicker)}</div>' if kicker else ""
+    title_html = f"<h2>{_e(title)}</h2>" if title else ""
+    body_html = f"<p>{body}</p>" if body else ""
+    items_html = ""
+    if items:
+        items_html = '<div class="decision-items">' + "".join(
+            f'<div class="decision-item">{item}</div>'
+            for item in items
+        ) + "</div>"
+    return f'<section class="decision-card">{kicker_html}{title_html}{body_html}{items_html}</section>'
+
+
+def _emit_option_cards(s: dict[str, Any]) -> str:
+    """`option-cards`: side-by-side proposal options with a proposed state."""
+    rows = s.get("rows", [])
+    cards = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        label = r.get("label", "")
+        title = r.get("title", "")
+        body = r.get("body", "")
+        verdict = r.get("verdict", "")
+        proposed = bool(r.get("proposed", False))
+        cls = "option-card proposed" if proposed else "option-card"
+        badge = '<span class="option-badge">Proposed</span>' if proposed else ""
+        verdict_html = f'<div class="option-verdict">{verdict}</div>' if verdict else ""
+        cards.append(
+            f'<article class="{cls}">'
+            f'<div class="option-label"><span>{_e(label)}</span>{badge}</div>'
+            f'<h3>{_e(title)}</h3>'
+            f'<p>{body}</p>'
+            f'{verdict_html}'
+            f'</article>'
+        )
+    return f'<div class="option-grid">{"".join(cards)}</div>'
+
+
+def _emit_file_tree(s: dict[str, Any]) -> str:
+    """`file-tree`: structured repository/file tree with notes.
+
+    Rows: [{path, note, depth, kind}]. Prefer this over code-shell for repo
+    layouts so mobile renders as readable rows instead of tiny horizontal code.
+    """
+    rows = s.get("rows", [])
+    row_html = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        path = r.get("path", "")
+        note = r.get("note", "")
+        kind = r.get("kind", "")
+        try:
+            depth = max(0, int(r.get("depth", 0)))
+        except (TypeError, ValueError):
+            depth = 0
+        kind_html = f'<span class="file-tree-kind">{_e(kind)}</span>' if kind else ""
+        row_html.append(
+            f'<div class="file-tree-row">'
+            f'<div class="file-tree-path" style="--depth:{depth}">{kind_html}{_e(path)}</div>'
+            f'<div class="file-tree-note">{note}</div>'
+            f'</div>'
+        )
+    return f'<div class="file-tree">{"".join(row_html)}</div>'
+
+
 def _emit_code_shell(s: dict[str, Any]) -> str:
     """`code-shell`: macOS-style code block with traffic dots + language tag."""
     lang = s.get("lang", "")
@@ -644,6 +721,8 @@ def _emit_subhead(s: dict[str, Any]) -> str:
 def _emit_props_table(s: dict[str, Any]) -> str:
     """`props-table`: classic prop/type/default/notes table."""
     headers = s.get("headers", ["Prop", "Type", "Default", "Notes"])
+    if len(headers) < 4:
+        headers = list(headers) + [""] * (4 - len(headers))
     rows = s.get("rows", [])
     th = "".join(f"<th>{_e(h)}</th>" for h in headers)
     tr = []
@@ -656,10 +735,10 @@ def _emit_props_table(s: dict[str, Any]) -> str:
         notes = r.get("notes", "")
         tr.append(
             f'<tr>'
-            f'<td class="mono prop-name">{_e(name)}</td>'
-            f'<td><span class="type-pill mono">{_e(type_)}</span></td>'
-            f'<td class="mono small muted">{_e(default)}</td>'
-            f'<td class="muted">{notes}</td>'
+            f'<td data-label="{_e(headers[0])}" class="mono prop-name">{_e(name)}</td>'
+            f'<td data-label="{_e(headers[1])}"><span class="type-pill mono">{_e(type_)}</span></td>'
+            f'<td data-label="{_e(headers[2])}" class="mono small muted">{_e(default)}</td>'
+            f'<td data-label="{_e(headers[3])}" class="muted">{notes}</td>'
             f'</tr>'
         )
     return f'<table class="props"><thead><tr>{th}</tr></thead><tbody>{"".join(tr)}</tbody></table>'
@@ -690,9 +769,9 @@ def _emit_status_table(s: dict[str, Any]) -> str:
             v = str(r.get(h, ""))
             if h == status_col:
                 badge_class = v.lower().replace("_", "-").replace(" ", "-")
-                cells.append(f'<td><span class="badge {badge_class}">{_e(v)}</span></td>')
+                cells.append(f'<td data-label="{_e(h)}"><span class="badge {badge_class}">{_e(v)}</span></td>')
             else:
-                cells.append(f'<td>{_e(v)}</td>')
+                cells.append(f'<td data-label="{_e(h)}">{_e(v)}</td>')
         tr.append(f'<tr>{"".join(cells)}</tr>')
     return f'<table class="props"><thead><tr>{th}</tr></thead><tbody>{"".join(tr)}</tbody></table>'
 
@@ -705,6 +784,9 @@ _SECTION_EMITTERS: dict[str, Any] = {
     "dep-list": _emit_dep_list,
     "q-list": _emit_q_list,
     "steps": _emit_steps,
+    "decision-card": _emit_decision_card,
+    "option-cards": _emit_option_cards,
+    "file-tree": _emit_file_tree,
     "code-shell": _emit_code_shell,
     "color-strip": _emit_color_strip,
     "fit-row": _emit_fit_row,
@@ -844,8 +926,11 @@ def _md_to_html(md: str) -> str:
             while i < n and "|" in lines[i] and lines[i].strip():
                 cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
                 html_lines.append("<tr>")
-                for c in cells:
-                    html_lines.append(f"<td>{inline(c)}</td>")
+                for idx, c in enumerate(cells):
+                    label = headers[idx] if idx < len(headers) else ""
+                    html_lines.append(
+                        f'<td data-label="{_html_lib.escape(label)}">{inline(c)}</td>'
+                    )
                 html_lines.append("</tr>")
                 i += 1
             html_lines.append("</tbody></table>")

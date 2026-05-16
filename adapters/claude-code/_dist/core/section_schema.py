@@ -160,6 +160,79 @@ SECTION_SCHEMA: dict[str, dict[str, Any]] = {
             ],
         },
     },
+    "decision-card": {
+        "description": (
+            "Decision-first editorial panel with kicker, headline, summary body, and supporting items. "
+            "Best near the top of proposals and decision memos."
+        ),
+        "fields": {
+            "kicker": "Small label above the decision headline. Optional.",
+            "title": "Decision headline rendered as h2. Optional.",
+            "body": "Summary paragraph. May contain inline HTML.",
+            "items": "Optional list of supporting strings. Items may contain inline HTML.",
+        },
+        "example": {
+            "kind": "decision-card",
+            "kicker": "Decision requested",
+            "title": "Adopt the curated FDE HVE package.",
+            "body": "Use a team-owned skill package with private developer customizations.",
+            "items": [
+                "Default to PaperBoard style.",
+                "Use Meridian for decision memos.",
+                "Keep personal config out of the repo.",
+            ],
+        },
+    },
+    "option-cards": {
+        "description": (
+            "Side-by-side proposal options with labels, summaries, verdicts, and a proposed badge. "
+            "Best for A/B/C decision tables."
+        ),
+        "fields": {
+            "rows": (
+                "List of {label, title, body, verdict, proposed?}. "
+                "proposed=true highlights the recommended option."
+            ),
+        },
+        "example": {
+            "kind": "option-cards",
+            "rows": [
+                {
+                    "label": "Option A",
+                    "title": "Status quo",
+                    "body": "Keep team and personal harness config mixed.",
+                    "verdict": "Not viable.",
+                },
+                {
+                    "label": "Option C",
+                    "title": "Curated package",
+                    "body": "Commit team skills and keep personal config private.",
+                    "verdict": "Recommended.",
+                    "proposed": True,
+                },
+            ],
+        },
+    },
+    "file-tree": {
+        "description": (
+            "Structured repository/file tree with notes and indentation. "
+            "Best for repo layouts where code blocks would be unreadable on mobile."
+        ),
+        "fields": {
+            "rows": (
+                "List of {path, note, depth, kind}. "
+                "depth controls indentation; kind is an optional short label such as dir/file."
+            ),
+        },
+        "example": {
+            "kind": "file-tree",
+            "rows": [
+                {"path": "repo/", "note": "project root", "kind": "dir", "depth": 0},
+                {"path": ".github/skills/", "note": "team-owned skills", "kind": "dir", "depth": 1},
+                {"path": ".vscode/settings.json", "note": "personal, gitignored", "kind": "file", "depth": 1},
+            ],
+        },
+    },
     "code-shell": {
         "description": (
             "macOS-style code block with traffic-light dots and a language tag. "

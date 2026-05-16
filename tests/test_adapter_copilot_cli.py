@@ -400,7 +400,8 @@ class TestCopilotPostToolUseCmd:
         decoded = json.loads(out)
         assert "additionalContext" in decoded
         assert "[atv-paperboard]" in decoded["additionalContext"]
-        assert "paperboard render" in decoded["additionalContext"]
+        assert "/paperboard" in decoded["additionalContext"]
+        assert "--style paperboard" in decoded["additionalContext"]
 
     def test_task_list_silent(self, monkeypatch, tmp_path):
         """Task lists do not qualify as artifacts — hook must be silent."""

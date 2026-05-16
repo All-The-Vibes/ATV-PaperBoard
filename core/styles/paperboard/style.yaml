@@ -1,0 +1,11 @@
+id: paperboard
+name: PaperBoard
+description: Clean default style for shareable agent artifacts.
+design: ../../designs/paperboard.DESIGN.md
+default_tier: atv
+aliases:
+  - default
+best_for:
+  - general reports
+  - simple docs
+  - tables

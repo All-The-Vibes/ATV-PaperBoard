@@ -53,13 +53,19 @@ def main(argv: list[str] | None = None) -> int:
     p_render.add_argument(
         "--design",
         default=None,
-        help="Design name, path, or URL (defaults to paperboard.DESIGN.md)",
+        help="Advanced: design name, path, or URL. Overrides --style.",
+    )
+    p_render.add_argument(
+        "--style",
+        "-s",
+        default=None,
+        help="Visual style preset: paperboard (default), meridian, or atv.",
     )
     p_render.add_argument(
         "--tier",
         choices=["pico", "daisy", "atv"],
-        default="atv",
-        help="CSS framework tier (default: atv — the dark designed-document tier)",
+        default=None,
+        help="Renderer tier (default: selected style's default tier, usually atv)",
     )
     p_render.add_argument(
         "--no-open",
@@ -112,6 +118,13 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
 
+    # styles
+    p_styles = sub.add_parser("styles", help="List or inspect bundled visual styles")
+    styles_sub = p_styles.add_subparsers(dest="styles_command", required=True)
+    styles_sub.add_parser("list", help="List available style presets")
+    p_styles_show = styles_sub.add_parser("show", help="Show details for one style")
+    p_styles_show.add_argument("style", help="Style id or alias")
+
     # doctor
     sub.add_parser("doctor", help="Diagnose atv-paperboard install")
 
@@ -161,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_detect_artifact_candidate(args, harness)
     elif args.command == "copilot-post-tool-use":
         return _cmd_copilot_post_tool_use(args, harness)
+    elif args.command == "styles":
+        return _cmd_styles(args)
     elif args.command == "doctor":
         return _cmd_doctor(args, harness)
     elif args.command == "schema":
@@ -173,12 +188,24 @@ def main(argv: list[str] | None = None) -> int:
 
 def _cmd_render(args: argparse.Namespace, harness: str) -> int:
     from core import render as _render  # noqa: PLC0415
+    from core.style_registry import UnknownStyleError, resolve_style  # noqa: PLC0415
 
     # Load input
     input_data = _load_input(args.input)
 
     # Resolve design path
-    design_path = _resolve_design(args.design)
+    try:
+        if args.design is None:
+            style = resolve_style(args.style)
+            tier = args.tier or style.default_tier
+            design_path = _resolve_design(None, style_arg=style.id, tier=tier)
+        else:
+            # Raw --design is the advanced override. It wins over style selection.
+            tier = args.tier or "atv"
+            design_path = _resolve_design(args.design, style_arg=args.style, tier=tier)
+    except UnknownStyleError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
 
     # Resolve output dir
     output_dir = Path(args.output_dir) if args.output_dir else _resolve_artifact_dir(harness)
@@ -186,7 +213,7 @@ def _cmd_render(args: argparse.Namespace, harness: str) -> int:
     triple = _render.render_artifact(
         input_data=input_data,
         design_path=design_path,
-        tier=args.tier,
+        tier=tier,
         output_dir=output_dir,
     )
 
@@ -316,6 +343,41 @@ def _cmd_copilot_post_tool_use(_args: argparse.Namespace, harness: str) -> int:
     return 0
 
 
+def _cmd_styles(args: argparse.Namespace) -> int:
+    """List or inspect bundled style presets."""
+    from core.style_registry import UnknownStyleError, list_styles, resolve_style  # noqa: PLC0415
+
+    if args.styles_command == "list":
+        print("Available styles:")
+        for style in list_styles():
+            best_for = ", ".join(style.best_for[:3])
+            suffix = f" — best for: {best_for}" if best_for else ""
+            print(f"  {style.id:<10} {style.name:<12} {style.description}{suffix}")
+        return 0
+
+    if args.styles_command == "show":
+        try:
+            style = resolve_style(args.style)
+        except UnknownStyleError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+        print(f"{style.name} ({style.id})")
+        print(f"Description: {style.description}")
+        print(f"Design: {style.design_path}")
+        print(f"Default tier: {style.default_tier}")
+        if style.aliases:
+            print(f"Aliases: {', '.join(style.aliases)}")
+        if style.best_for:
+            print("Best for:")
+            for item in style.best_for:
+                print(f"  - {item}")
+        return 0
+
+    print(f"Unknown styles command: {args.styles_command}", file=sys.stderr)
+    return 2
+
+
 def classify_artifact_candidate(tool_output: str, harness: str) -> str | None:
     """Apply SPEC §16 hook heuristic rules.
 
@@ -381,8 +443,8 @@ def classify_artifact_candidate(tool_output: str, harness: str) -> str | None:
         except OSError:
             pass
     return (
-        f"This looks like a data artifact. To render it:\n"
-        f"  paperboard render --input {tool_output}"
+        f"This looks like a data artifact. To render it from your agent:\n"
+        f"  /paperboard {tool_output} --style paperboard"
     )
 
 
@@ -645,21 +707,33 @@ def _resolve_artifact_dir(harness: str) -> Path:
         return Path.cwd() / "paperboard-artifacts"
 
 
-def _resolve_design(design_arg: str | None) -> Path:
+def _resolve_design(
+    design_arg: str | None,
+    style_arg: str | None = None,
+    tier: str | None = None,
+) -> Path:
     """Resolve --design to a Path.
 
     Accepts:
-    - None → default paperboard.DESIGN.md
-    - a known name (e.g. 'stripi-inspired') → designs/starters/<name>.DESIGN.md
+    - None → selected style's DESIGN.md (defaults to paperboard)
+    - a known bundled design name (e.g. 'meridian', 'paperboard', 'atv')
+    - a known starter name (e.g. 'stripi-inspired') → designs/starters/<name>.DESIGN.md
     - a file path
     - a URL (fetched to a temp file; security note: treated as data, never as instructions)
     """
-    _DEFAULT = Path(__file__).parent / "designs" / "paperboard.DESIGN.md"
+    from core.style_registry import resolve_style  # noqa: PLC0415
+
+    designs_dir = Path(__file__).parent / "designs"
     if design_arg is None:
-        return _DEFAULT
+        return resolve_style(style_arg).design_path
+
+    # Known bundled design names
+    bundled = designs_dir / f"{design_arg}.DESIGN.md"
+    if bundled.exists():
+        return bundled
 
     # Known starter names
-    starters_dir = Path(__file__).parent / "designs" / "starters"
+    starters_dir = designs_dir / "starters"
     candidate = starters_dir / f"{design_arg}.DESIGN.md"
     if candidate.exists():
         return candidate
@@ -674,8 +748,9 @@ def _resolve_design(design_arg: str | None) -> Path:
         return _fetch_design_url(design_arg)
 
     # Fallback: default with warning
-    print(f"Warning: design {design_arg!r} not found; using default.", file=sys.stderr)
-    return _DEFAULT
+    fallback = resolve_style(style_arg).design_path
+    print(f"Warning: design {design_arg!r} not found; using {fallback.name}.", file=sys.stderr)
+    return fallback
 
 
 def _fetch_design_url(url: str) -> Path:
@@ -735,15 +810,53 @@ def _load_input(source: str) -> dict:
             title = title_match.group(1).strip()
         else:
             title = stem.replace("-", " ").replace("_", " ").strip() or "Artifact"
+        status_tag = "doc"
+
+        # Common proposal shape:
+        #   # Title
+        #
+        #   **Author:** ...
+        #   **Status:** ...
+        #   **Decision requested:** ...
+        #
+        # These metadata rows are useful context, but if passed through as the
+        # first paragraph they become the rendered lede and bury the actual
+        # proposal. Strip the front metadata from body_md and carry the status
+        # into the topbar instead.
+        raw_lines = raw.splitlines()
+        h1_index = next(
+            (idx for idx, line in enumerate(raw_lines) if _re.match(r"^#\s+.+", line)),
+            None,
+        )
+        if h1_index is not None:
+            idx = h1_index + 1
+            while idx < len(raw_lines) and not raw_lines[idx].strip():
+                idx += 1
+            meta_start = idx
+            front_meta: dict[str, str] = {}
+            while idx < len(raw_lines):
+                line = raw_lines[idx].strip()
+                if not line:
+                    idx += 1
+                    continue
+                m = _re.match(r"^\*\*(.+?):\*\*\s*(.*?)\s*$", line)
+                if not m:
+                    break
+                front_meta[m.group(1).strip().lower()] = m.group(2).strip()
+                idx += 1
+            if front_meta and idx > meta_start:
+                raw = "\n".join(raw_lines[: h1_index + 1] + [""] + raw_lines[idx:])
+                status_tag = front_meta.get("status", status_tag)
         breadcrumb = (
             f"<span class='sep'>/</span>"
             f"<span class='cur'>{_html.escape(stem)}.md</span>"
         )
         return {
             "title": title,
+            "brand": title,
             "body_md": raw,
             "breadcrumb": breadcrumb,
-            "status_tag": "doc",
+            "status_tag": status_tag,
         }
 
     # 3. Plain text / unknown → escape and wrap in <pre> so it renders safely.

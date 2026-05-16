@@ -72,6 +72,7 @@ core = [
     "templates/**/*.html",
     "designs/**/*.DESIGN.md",
     "designs/**/.gitkeep",
+    "styles/**/*.yaml",
 ]
 
 [tool.pytest.ini_options]

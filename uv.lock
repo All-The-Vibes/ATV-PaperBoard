@@ -4,7 +4,7 @@ requires-python = ">=3.10"
 
 [[package]]
 name = "atv-paperboard"
-version = "0.1.0a1"
+version = "0.1.4.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },

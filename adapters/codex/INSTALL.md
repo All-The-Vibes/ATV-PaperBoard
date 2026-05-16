@@ -52,7 +52,8 @@ Or open `~/.codex/config.toml` in your editor and paste the contents of
 
 ## Path B — Skill Only (no hook)
 
-Install the skill but skip the config edit. You invoke `paperboard render` manually.
+Install the skill but skip the config edit. You invoke `/paperboard` from Codex when
+you want an artifact.
 
 ```bash
 git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
@@ -73,8 +74,9 @@ into your global Codex instructions file:
 cat adapters/codex/AGENTS.md.template >> ~/.codex/AGENTS.md
 ```
 
-This tells Codex to invoke `paperboard render --input <path>` on qualifying structured
-output. You still need the `paperboard` CLI on PATH (`pip install atv-paperboard`).
+This tells Codex to treat `/paperboard` as the agent-facing command and invoke
+`paperboard render --input <path> --style <style>` on qualifying structured output.
+You still need the `paperboard` CLI on PATH (`pip install atv-paperboard`).
 
 ---
 

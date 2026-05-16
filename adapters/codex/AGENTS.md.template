@@ -6,12 +6,21 @@
 
 ## atv-paperboard: HTML Artifact Rendering
 
+Prefer the agent-facing PaperBoard command:
+
+    /paperboard <path> [--style paperboard|meridian|atv]
+    /paperboard path/to/proposal.md --style meridian
+    /paperboard styles
+    /paperboard gallery
+
 When you produce structured output that qualifies (see Triggers below), upgrade it to a
-styled HTML artifact by invoking:
+styled HTML artifact. The `/paperboard` command is the human-facing workflow. Under the
+hood, execute:
 
-    paperboard render --input <path>
+    paperboard render --input <path> --style <style>
 
-where `<path>` is the file path of the structured output you just wrote.
+where `<path>` is the file path of the structured output you just wrote and `<style>`
+defaults to `paperboard`.
 
 The command writes three files to `~/.codex/atv-paperboard-artifacts/<date>/`:
 - `<slug>.html`      — single-file styled artifact, ready to open in a browser
@@ -22,7 +31,7 @@ After rendering, report the artifact path and offer to open it.
 
 ## Triggers
 
-Invoke `paperboard render` automatically when you write any of these output types:
+Invoke `/paperboard` automatically when you write any of these output types:
 
 - **Status dashboards** — columns with pass/fail, score, %, state, result, or count
 - **Comparison tables** — ≥2 numeric columns comparing options, versions, or configurations
@@ -38,7 +47,7 @@ files under docs/, .github/, or CHANGELOG*.
 
 If `paperboard` is not on PATH, invoke via:
 
-    python ~/.agents/skills/atv-paperboard/core/cli.py render --input <path>
+    python ~/.agents/skills/atv-paperboard/core/cli.py render --input <path> --style <style>
 
 To verify the install and confirm harness detection:
 

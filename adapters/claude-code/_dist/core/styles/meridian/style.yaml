@@ -1,0 +1,11 @@
+id: meridian
+name: Meridian
+description: Editorial proposal and decision-doc style.
+design: ../../designs/meridian.DESIGN.md
+default_tier: atv
+aliases: []
+best_for:
+  - proposals
+  - decision memos
+  - plans
+  - reviews

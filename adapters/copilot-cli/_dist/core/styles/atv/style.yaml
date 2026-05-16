@@ -1,0 +1,11 @@
+id: atv
+name: ATV
+description: Dense technical engineering style.
+design: ../../designs/atv.DESIGN.md
+default_tier: atv
+aliases: []
+best_for:
+  - engineering reports
+  - debugging notes
+  - architecture docs
+  - technical comparisons
