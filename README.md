@@ -16,7 +16,24 @@ https://github.com/user-attachments/assets/471627d0-48b3-4a2d-aa15-7fd751f374a6
 
 ## Why this exists
 
-Every coding agent today renders status updates the same way: a wall of monospace markdown in a chat window. That output is **ephemeral, ugly, and impossible to share with stakeholders.** Paperboard intercepts the moment an agent emits structured data (a status table, a triage list, a comparison matrix) and turns it into a **lint-clean HTML artifact** that lives on disk, links into a gallery, and renders identically across harnesses.
+In May 2026, two posts crystallized what every AI coding agent gets wrong about output:
+
+> **"Audio is the human-preferred _input_ to AIs, but vision is the preferred _output_ from them. Around a ~third of our brains is a massively parallel processor dedicated to vision — the 10-lane superhighway of information into the brain. The progression: 1) raw text 2) markdown _(current default)_ 3) HTML _(early but forming the new default)_ … _n_) interactive neural simulations. Hot tip: try ask for HTML."**
+>
+> — Andrej Karpathy, [May 11 2026](https://x.com/karpathy/status/2053872850101285137)
+
+> **"Using Claude Code: The Unreasonable Effectiveness of HTML."** For plans, docs, prototypes, and mockups, HTML is _strictly better_ than markdown. Have the agent write `.html` files and open them in a browser.
+>
+> — Thariq ([@trq212](https://x.com/trq212/status/2052809885763747935)), May 8 2026
+
+Paperboard is the toolkit that makes step 3 trivial **today**. Every coding agent right now renders status updates the same way: a wall of monospace markdown in a chat window. That output is **ephemeral, ugly, and impossible to share with stakeholders.** Paperboard intercepts the moment an agent emits structured data — a status table, a triage list, a comparison matrix — and turns it into a **lint-clean, single-file HTML artifact** that lives on disk, links into a gallery, and renders identically across Claude Code, Codex CLI, and GitHub Copilot CLI.
+
+### Core philosophy
+
+1. **Vision is the right output channel.** A table the agent wrote in HTML is read faster, shared more easily, and embeds in any PR — no Markdown renderer required, no copy-paste reformatting on the human side.
+2. **Single-file or it doesn't ship.** Every artifact is one `.html` you can drag into a Slack thread or attach to a Jira ticket. CSS inlined, no CDN, no build step, no `npm install` on the recipient's machine.
+3. **Design tokens are the contract, not vibes.** Every `.html` is paired with a `.DESIGN.md` (Google's spec) declaring allowable colors and type. The lint walks the HTML and rejects any drift. Quality stays consistent across N renders without policing prose.
+4. **Compounding > one-shot.** Each render auto-regenerates `gallery.html` — your agent's output becomes a growing portfolio of paste-ready artifacts, not throwaway chat turns.
 
 It's the same toolkit, the same contract, the same `core/` Python package — wired into **three different agent runtimes** via thin native adapters, plus a GitHub Actions recipe for the Copilot Coding Agent.
 
