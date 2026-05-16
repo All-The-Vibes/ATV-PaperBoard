@@ -4,17 +4,13 @@
 >
 > Drop it into **Claude Code**, **Codex CLI**, or **GitHub Copilot CLI** and your agent stops dumping markdown into the chat — it emits paired `.html` + `.DESIGN.md` artifacts governed by Google's [DESIGN.md spec](https://github.com/google-labs-code/design.md), persisted to disk, and rolled into a compounding gallery you can actually share.
 
+<!-- Inline-playable on github.com — keep this URL bare and on its own line. -->
+
+https://github.com/user-attachments/assets/471627d0-48b3-4a2d-aa15-7fd751f374a6
+
 <p align="center">
-  <a href="assets/paperboard-teaser.mp4">
-    <img src="assets/paperboard-teaser-poster.jpg" alt="paperboard teaser — click to play" width="720" />
-  </a>
-  <br/>
-  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Watch the 60-second teaser</a></strong></sub>
+  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Fallback: open the 60-second teaser file</a></strong></sub>
 </p>
-
-<!-- GitHub renders an inline player when the .mp4 is referenced via raw URL; the link above is the universal fallback. -->
-
-https://github.com/All-The-Vibes/ATV-PaperBoard/raw/main/assets/paperboard-teaser.mp4
 
 ---
 
