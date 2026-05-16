@@ -382,7 +382,7 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
         bridge_ver = _bridge.version()
         in_range, msg = _bridge.bridge_compatibility(bridge_ver)
         bridge_status = ("✓ " if in_range else "⚠ ") + msg
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         # bridge missing or broken — doctor still has to print something.
         bridge_ver = "not installed"
         bridge_status = (
