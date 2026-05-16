@@ -1,39 +1,39 @@
 ---
 version: alpha
 name: paperboard
-description: Default design for atv-paperboard gallery and emitted artifacts. Dialed-back neubrutalism — bold structure, restrained palette, no decorative excess.
+description: Default design for atv-paperboard gallery and emitted artifacts. Dialed-back neubrutalism — dark editorial surfaces, restrained accent, no decorative excess.
 colors:
-  primary: "#1A1A1A"
-  secondary: "#3B82F6"
-  accent: "#F59E0B"
-  background: "#FAFAFA"
-  surface: "#FFFFFF"
-  border: "#E2E8F0"
-  foreground: "#0F172A"
-  muted: "#64748B"
-  danger: "#EF4444"
-  success: "#22C55E"
+  primary: "#7170FF"
+  secondary: "#5E6AD2"
+  accent: "#F1B13B"
+  background: "#08090A"
+  surface: "#0E0F12"
+  border: "#1A1B21"
+  foreground: "#F7F8F8"
+  muted: "#8A8F98"
+  danger: "#C97070"
+  success: "#7FAE6E"
 typography:
   body:
-    fontFamily: "system-ui, -apple-system, sans-serif"
-    fontSize: 16px
+    fontFamily: "Inter, Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontSize: 15px
     fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.55
   heading:
-    fontFamily: "system-ui, -apple-system, sans-serif"
-    fontSize: 24px
-    fontWeight: 700
-    lineHeight: 1.2
+    fontFamily: "Inter, Geist, -apple-system, sans-serif"
+    fontSize: 28px
+    fontWeight: 510
+    lineHeight: 1.15
     letterSpacing: -0.02em
   mono:
-    fontFamily: "ui-monospace, SFMono-Regular, monospace"
-    fontSize: 14px
+    fontFamily: "Geist Mono, JetBrains Mono, SF Mono, Menlo, Consolas, monospace"
+    fontSize: 13px
     fontWeight: 400
     lineHeight: 1.5
 rounded:
-  sm: 2px
-  md: 4px
-  lg: 6px
+  sm: 4px
+  md: 8px
+  lg: 12px
 spacing:
   xs: 4px
   sm: 8px
@@ -44,37 +44,37 @@ spacing:
 
 # Paperboard
 
-Default design system for atv-paperboard. The aesthetic is dialed-back neubrutalism: high-contrast structure and decisive typography, but no rainbow palettes or thick drop-shadows unless the artifact content warrants it.
+Default design system for atv-paperboard. The aesthetic is dialed-back neubrutalism on a dark editorial canvas: high-contrast structure, decisive typography, restrained accent, no rainbow palettes or thick drop-shadows.
 
 ## Do
 
-- Use `{colors.primary}` for borders, headings, and interactive states.
-- Use `{colors.secondary}` for primary calls-to-action and links.
-- Use `{colors.accent}` sparingly — status badges, highlights.
-- Prefer `{typography.body}` for prose; `{typography.mono}` for code and data.
+- Use `{colors.foreground}` for primary text and headings.
+- Use `{colors.primary}` for emphasis, interactive states, and accent borders.
+- Use `{colors.accent}` sparingly — status callouts, errors, pull quotes.
+- Prefer `{typography.body}` for prose; `{typography.mono}` for code, labels, and metadata.
 - Keep spacing on the `{spacing.md}` / `{spacing.lg}` scale for card interiors.
-- Border thickness: 1px for dividers, 2px for card outlines.
+- Border thickness: 1px for dividers, layered surfaces (background → surface → surface-2) define depth.
 
 ## Don't
 
-- Don't use drop-shadows by default. Borders define depth here.
+- Don't use drop-shadows by default. Borders and layered surfaces define depth here.
 - Don't mix more than 3 type sizes on one artifact.
 - Don't apply `{colors.accent}` to more than 15 % of visible surface area.
 - Don't use decorative background patterns in the default tier.
 
 ## Colors
 
-Primary (`{colors.primary}`) anchors text and outlines. Secondary (`{colors.secondary}`) drives action. Accent (`{colors.accent}`) is reserved for status and emphasis. Background (`{colors.background}`) and surface (`{colors.surface}`) are near-white — no pure white, avoids harshness on high-DPI.
+Foreground (`{colors.foreground}`) anchors text. Primary (`{colors.primary}`) is the indigo accent used for interactive borders, links, and emphasis panels. Accent (`{colors.accent}`) is the rose reserved for status and warnings. Background (`{colors.background}`) and surface (`{colors.surface}`) are near-black — pure `#000000` would be too stark; `#08090A` and `#0E0F12` give subtle depth between the page and elevated surfaces.
 
 Muted (`{colors.muted}`) for secondary text and metadata rows.
 
 ## Typography
 
-One font stack throughout: system-ui. Heading weight 700, body weight 400. Letter-spacing tightened on headings (`-0.02em`) for the neubrutalist compression feel without custom fonts.
+Inter / Geist throughout for body and headings; Geist Mono for code and labels. Heading weight 510 (slightly heavier than regular), body weight 400. Letter-spacing tightened on headings (`-0.02em`) for the neubrutalist compression feel.
 
 ## Components
 
-Gallery frame: flat card, `{colors.border}` 2px outline, `{rounded.md}` radius, `{spacing.md}` padding.
-Artifact card: same as gallery frame; heading row uses `{colors.primary}`, metadata row uses `{colors.muted}`.
-Status badge: `{colors.accent}` background, `{colors.primary}` text, `{rounded.sm}` radius, `{spacing.xs}` padding.
-Code block: `{colors.surface}` background, `{colors.border}` 1px outline, `{typography.mono}`.
+Gallery frame: flat card, `{colors.border}` 1px outline, `{rounded.lg}` radius, `{spacing.md}` padding, `{colors.surface}` background.
+Artifact card: same as gallery frame; heading row uses `{colors.foreground}`, metadata row uses `{colors.muted}`.
+Status badge: transparent background, `{colors.primary}` text, 1px `{colors.primary}` outline, `{rounded.sm}` radius, `{spacing.xs}` padding.
+Code block: `{colors.background}` background (deeper than surface), `{colors.border}` 1px outline, `{typography.mono}`.

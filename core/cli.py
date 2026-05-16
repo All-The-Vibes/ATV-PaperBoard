@@ -594,22 +594,60 @@ def _fetch_design_url(url: str) -> Path:
 
 
 def _load_input(source: str) -> dict:
-    """Load input from a file path or stdin ('-')."""
+    """Load input from a file path or stdin ('-').
+
+    Resolution order:
+      1. If content parses as JSON → return as-is (existing structured input).
+      2. If source is a ``.md`` / ``.markdown`` file → extract first H1 as title,
+         pass full content as ``body_md`` so the renderer's markdown converter
+         turns it into proper HTML (tables, code blocks, blockquotes, etc.).
+      3. Otherwise → wrap the raw text in a ``<pre>`` block as ``body_html``
+         (escaped) so plain-text files still display safely.
+    """
+    import html as _html  # noqa: PLC0415
     import json as _json  # noqa: PLC0415
+    import re as _re  # noqa: PLC0415
 
     if source == "-":
         raw = sys.stdin.read()
+        suffix = ""
+        stem = "artifact"
     else:
-        raw = Path(source).read_text(encoding="utf-8")
+        path = Path(source)
+        raw = path.read_text(encoding="utf-8")
+        suffix = path.suffix.lower()
+        stem = path.stem
 
-    # Try JSON first
+    # 1. JSON input takes priority — the canonical structured format.
     try:
         return _json.loads(raw)
     except _json.JSONDecodeError:
         pass
 
-    # Fall back to treating raw text as body_html
-    return {"title": "Artifact", "body_html": f"<pre>{raw}</pre>"}
+    # 2. Markdown → extract title from first H1 (falls back to filename stem).
+    #    The full body (including the H1) is passed as body_md; _render_body
+    #    detects body_md and skips its own title-H1 injection so we don't
+    #    double-render the heading.
+    if suffix in (".md", ".markdown"):
+        title_match = _re.search(r"^#\s+(.+?)\s*#*\s*$", raw, _re.MULTILINE)
+        if title_match:
+            title = title_match.group(1).strip()
+        else:
+            title = stem.replace("-", " ").replace("_", " ").strip() or "Artifact"
+        breadcrumb = (
+            f"<span class='sep'>/</span>"
+            f"<span class='cur'>{_html.escape(stem)}.md</span>"
+        )
+        return {
+            "title": title,
+            "body_md": raw,
+            "breadcrumb": breadcrumb,
+            "status_tag": "doc",
+        }
+
+    # 3. Plain text / unknown → escape and wrap in <pre> so it renders safely.
+    title = stem.replace("-", " ").replace("_", " ").strip() or "Artifact"
+    return {"title": title, "body_html": f"<pre>{_html.escape(raw)}</pre>"}
 
 
 def _has_data_table(content: str) -> bool:

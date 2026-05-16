@@ -4,12 +4,14 @@
 >
 > Drop it into **Claude Code**, **Codex CLI**, or **GitHub Copilot CLI** and your agent stops dumping markdown into the chat — it emits paired `.html` + `.DESIGN.md` artifacts governed by Google's [DESIGN.md spec](https://github.com/google-labs-code/design.md), persisted to disk, and rolled into a compounding gallery you can actually share.
 
-<!-- Inline-playable on github.com — keep this URL bare and on its own line. -->
-
-https://github.com/user-attachments/assets/471627d0-48b3-4a2d-aa15-7fd751f374a6
+<p align="center">
+  <a href="assets/paperboard-teaser.mp4">
+    <img src="assets/paperboard-teaser-poster.jpg" alt="ATV Paperboard teaser poster" width="720">
+  </a>
+</p>
 
 <p align="center">
-  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Fallback: open the 60-second teaser file</a></strong></sub>
+  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Open the 60-second teaser</a></strong></sub>
 </p>
 
 ---
@@ -349,5 +351,6 @@ Apache-2.0. See [LICENSE](LICENSE).
 ## Contributing
 
 PRs welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for project layout, dev setup, test markers, lint config, branching, commit conventions, recipes for common contributions (new harness adapter, new design starter, new CLI subcommand), and where to file bug reports vs security issues. No CLA — inbound = outbound under Apache-2.0.
+
 
 

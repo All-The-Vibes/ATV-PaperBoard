@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>{{ title | e }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: {{ tokens.get('--color-background', '#08090a') }};
@@ -23,30 +26,43 @@
     --accent: {{ tokens.get('--color-primary', '#7170ff') }};
     --accent-bg: rgba(94,106,210,0.10);
     --accent-line: rgba(113,112,255,0.32);
-    --rose: {{ tokens.get('--color-accent', '#f43f5e') }};
-    --success: {{ tokens.get('--color-success', '#34d399') }};
-    --danger: {{ tokens.get('--color-danger', '#fb7185') }};
+    --amber: {{ tokens.get('--color-accent', '#f1b13b') }};
+    --amber-soft: rgba(241,177,59,0.10);
+    --amber-line: rgba(241,177,59,0.42);
+    --rose: {{ tokens.get('--color-accent', '#f1b13b') }};
+    --success: {{ tokens.get('--color-success', '#7fae6e') }};
+    --danger: {{ tokens.get('--color-danger', '#c97070') }};
     --glow-blue: rgba(94,106,210,0.22);
     --glow-rose: rgba(244,63,94,0.14);
     --glow-cyan: rgba(34,211,238,0.10);
+    --glow-amber: rgba(241,177,59,0.06);
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", "Geist Mono", "SF Mono", Menlo, Consolas, monospace;
   }
 
   * { box-sizing: border-box; }
   html, body { background: var(--bg); }
   body {
     margin: 0;
-    font-family: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--font-body);
     font-feature-settings: "cv01", "ss03", "ss01";
     color: var(--text-1);
     font-size: 15px;
     line-height: 1.55;
+    letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-amber), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(113,112,255,0.05), transparent 60%);
+    background-attachment: fixed;
   }
 
-  .mono { font-family: "Geist Mono", "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; font-feature-settings: "tnum", "ss01"; }
+  .mono { font-family: var(--font-mono); font-feature-settings: "tnum", "ss01"; }
+  .display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
   .small { font-size: 11.5px; }
   .muted { color: var(--text-3); }
   .dim { color: var(--text-4); }
@@ -308,6 +324,259 @@
   footer.foot .row { display: flex; gap: 28px; flex-wrap: wrap; align-items: baseline; }
   footer.foot .row .right { margin-left: auto; }
   footer.foot .mono { color: var(--text-4); font-size: 11.5px; }
+
+  /* ── Prose (markdown-rendered docs) ──────────────────────────────────────
+     Scoped under .prose so it never collides with the section-based renders
+     above. Emitted by core.render._md_to_html when input is a .md file.
+     Editorial bar: Instrument Serif display, Inter body, JetBrains Mono code,
+     amber italic accent. */
+  .prose {
+    padding: 72px 0 24px;
+    max-width: 880px;
+    counter-reset: prose-section;
+  }
+  .prose > *:first-child { margin-top: 0; }
+
+  /* First H1 = serif hero. Italic <em> inside takes the amber accent. */
+  .prose > h1:first-child {
+    margin: 0 0 22px;
+    font-family: var(--font-display);
+    font-size: clamp(56px, 7.4vw, 92px);
+    font-weight: 400; letter-spacing: -0.02em; line-height: 1.02;
+    color: var(--text-1);
+    max-width: 22ch;
+  }
+  .prose > h1:first-child em {
+    font-style: italic;
+    color: var(--amber);
+    font-weight: 400;
+  }
+  /* Lede = the first paragraph after the hero. Larger, dim, bottom-divided. */
+  .prose > h1:first-child + p {
+    margin: 0 0 56px;
+    padding: 0 0 56px;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(22px, 2.2vw, 27px);
+    line-height: 1.4;
+    color: var(--text-2);
+    max-width: 56ch;
+    letter-spacing: -0.005em;
+    border-bottom: 1px solid var(--line);
+  }
+  .prose > h1:first-child + p em { color: var(--amber); }
+  .prose > h1:first-child + p strong {
+    font-family: var(--font-body);
+    font-style: normal;
+    font-weight: 500;
+    color: var(--text-1);
+  }
+
+  /* Subsequent H1s (rare in real docs) get a quieter sans treatment. */
+  .prose h1 {
+    margin: 64px 0 24px;
+    font-size: clamp(34px, 4.4vw, 48px);
+    font-weight: 510; letter-spacing: -0.025em; line-height: 1.1;
+    color: var(--text-1);
+  }
+
+  /* H2 = section break with auto-numbered eyebrow ("01", "02", …)
+     + Instrument Serif display. */
+  .prose h2 {
+    counter-increment: prose-section;
+    margin: 88px 0 22px;
+    padding-top: 40px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: clamp(34px, 3.6vw, 44px);
+    font-weight: 400; letter-spacing: -0.01em; line-height: 1.1;
+    color: var(--text-1);
+    position: relative;
+  }
+  .prose h2::before {
+    content: counter(prose-section, decimal-leading-zero);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 18px;
+  }
+  .prose h2 em { font-style: italic; color: var(--amber); font-weight: 400; }
+
+  .prose h3 {
+    margin: 44px 0 14px;
+    font-size: 20px; font-weight: 510; letter-spacing: -0.012em; line-height: 1.3;
+    color: var(--text-1);
+  }
+  .prose h4 {
+    margin: 32px 0 10px;
+    font-family: var(--font-mono);
+    font-size: 11.5px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--text-3);
+  }
+
+  .prose p {
+    margin: 16px 0;
+    font-size: 15.5px; line-height: 1.68; color: var(--text-2);
+    max-width: 68ch;
+  }
+  .prose ul, .prose ol {
+    margin: 16px 0; padding-left: 24px;
+    font-size: 15.5px; line-height: 1.68; color: var(--text-2);
+    max-width: 68ch;
+  }
+  .prose li { margin: 7px 0; }
+  .prose li::marker { color: var(--amber); font-family: var(--font-mono); font-size: 13px; }
+  .prose ol li::marker { font-size: 12.5px; }
+
+  .prose a {
+    color: var(--text-1);
+    border-bottom: 1px solid var(--accent-line);
+    transition: border-color 180ms var(--ease);
+  }
+  .prose a:hover { border-color: var(--accent); }
+  .prose strong { color: var(--text-1); font-weight: 600; }
+  /* Italic = the editorial signature. Inline italics pick up the amber accent. */
+  .prose em {
+    color: var(--amber);
+    font-style: italic;
+  }
+  /* Inline code = warm-tinted chip, mono font, amber text. */
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--amber-soft);
+    padding: 1.5px 7px;
+    border-radius: 4px;
+    color: var(--amber);
+    border: 1px solid var(--amber-line);
+  }
+
+  .prose hr {
+    border: 0; border-top: 1px solid var(--line);
+    margin: 56px 0;
+  }
+
+  /* Blockquote = pull-quote with serif italic and amber accent rail. */
+  .prose blockquote {
+    margin: 32px 0;
+    padding: 8px 0 8px 28px;
+    border-left: 2px solid var(--amber);
+    background: transparent;
+    color: var(--text-2);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 22px; line-height: 1.45;
+    border-radius: 0;
+    max-width: 60ch;
+  }
+  .prose blockquote p { font-size: inherit; line-height: inherit; margin: 8px 0; max-width: none; color: inherit; font-family: inherit; font-style: inherit; }
+  .prose blockquote strong { color: var(--text-1); font-family: var(--font-body); font-style: normal; font-weight: 500; }
+  .prose blockquote a { color: var(--text-1); border-color: var(--line-strong); }
+  .prose blockquote em { color: var(--amber); font-style: italic; }
+  .prose blockquote code { font-size: 0.78em; }
+
+  /* GFM alerts: > [!NOTE], > [!TIP], > [!IMPORTANT], > [!WARNING], > [!CAUTION] */
+  .prose .callout {
+    margin: 28px 0;
+    padding: 20px 26px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--text-3);
+    border-radius: 12px;
+    display: block;
+    color: var(--text-2); font-size: 15px; line-height: 1.6;
+    font-family: var(--font-body); font-style: normal;
+  }
+  .prose .callout p { font-family: var(--font-body); font-style: normal; font-size: 15px; line-height: 1.6; color: var(--text-2); max-width: none; }
+  .prose .callout-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    margin-bottom: 10px; color: var(--text-3);
+  }
+  .prose .callout-body { display: block; }
+  .prose .callout-note      { border-left-color: var(--accent); }
+  .prose .callout-note      .callout-label { color: var(--accent); }
+  .prose .callout-tip       { border-left-color: var(--success); }
+  .prose .callout-tip       .callout-label { color: var(--success); }
+  .prose .callout-important { border-left-color: var(--amber); background: var(--amber-soft); }
+  .prose .callout-important .callout-label { color: var(--amber); }
+  .prose .callout-warning   { border-left-color: var(--amber); }
+  .prose .callout-warning   .callout-label { color: var(--amber); }
+  .prose .callout-caution   { border-left-color: var(--danger); }
+  .prose .callout-caution   .callout-label { color: var(--danger); }
+
+  /* Fenced code = window-chrome shell, lang label top-right. */
+  .prose pre.code-block {
+    position: relative;
+    margin: 26px 0;
+    padding: 44px 24px 22px;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px; line-height: 1.6; color: var(--text-2);
+  }
+  .prose pre.code-block::before {
+    content: "";
+    position: absolute; top: 14px; left: 16px;
+    width: 38px; height: 10px;
+    background-image:
+      radial-gradient(circle, #ff5f57 50%, transparent 51%),
+      radial-gradient(circle, #febc2e 50%, transparent 51%),
+      radial-gradient(circle, #28c840 50%, transparent 51%);
+    background-size: 10px 10px;
+    background-position: 0 0, 14px 0, 28px 0;
+    background-repeat: no-repeat;
+    opacity: 0.55;
+  }
+  .prose pre.code-block[data-lang]::after {
+    content: attr(data-lang);
+    position: absolute; top: 13px; right: 16px;
+    font-family: var(--font-mono); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-4);
+  }
+  .prose pre.code-block code {
+    background: transparent; padding: 0; border: 0;
+    color: inherit; font-size: inherit;
+  }
+
+  /* GFM tables = polished props grid. */
+  .prose table.md {
+    width: 100%; border-collapse: collapse;
+    margin: 28px 0;
+    border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+    background: var(--surface);
+  }
+  .prose table.md th {
+    text-align: left; padding: 13px 18px;
+    font-family: var(--font-mono);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--amber); background: var(--surface-2);
+    border-bottom: 1px solid var(--line); font-weight: 500;
+  }
+  .prose table.md td {
+    padding: 15px 18px;
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    vertical-align: top;
+    font-size: 14px; line-height: 1.55; color: var(--text-2);
+  }
+  .prose table.md td:last-child { border-right: 0; }
+  .prose table.md tr:last-child td { border-bottom: 0; }
+  .prose table.md tr:hover td { background: rgba(255,255,255,0.015); }
+  .prose table.md code { font-size: 12.5px; padding: 1px 5px; }
+  .prose table.md strong { color: var(--text-1); }
+
+  .prose img {
+    max-width: 100%; height: auto;
+    border-radius: 8px; margin: 18px 0;
+    border: 1px solid var(--line);
+  }
 </style>
 </head>
 <body>

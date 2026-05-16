@@ -85,12 +85,15 @@ def _hex_to_rgb(h: str) -> tuple[int, int, int]:
 
 
 def _dominant_color(img, x0: int, y0: int, x1: int, y1: int,
-                    ignore_near_white: bool = True) -> tuple[int, int, int] | None:
+                    ignore_near_white: bool = True,
+                    ignore_near_black: bool = True) -> tuple[int, int, int] | None:
     pixels = []
     for y in range(y0, y1, 3):
         for x in range(x0, x1, 3):
             r, g, b = img.getpixel((x, y))
             if ignore_near_white and r > 240 and g > 240 and b > 240:
+                continue
+            if ignore_near_black and r < 20 and g < 20 and b < 20:
                 continue
             pixels.append((r, g, b))
     return Counter(pixels).most_common(1)[0][0] if pixels else None
@@ -142,8 +145,8 @@ def test_pico_tier_cascade_fidelity(tmp_path: Path, http_server: str):
     png = _render_and_shot(input_path, tmp_path, http_server, tier="pico")
     img = Image.open(png).convert("RGB")
 
-    expected_primary = _hex_to_rgb("#1A1A1A")
-    expected_bg = _hex_to_rgb("#FAFAFA")
+    expected_primary = _hex_to_rgb("#7170FF")
+    expected_bg = _hex_to_rgb("#08090A")
 
     bg_pixel = img.getpixel((5, 5))
     h1_pixel = _dominant_color(img, 60, 60, 700, 110)

@@ -352,9 +352,12 @@ def _default_body_html(input_data: dict[str, Any]) -> str:
 
     title = input_data.get("title")
     subtitle = input_data.get("subtitle")
-    if title:
+    has_body_md = "body_md" in input_data
+    # When body_md is supplied, the markdown body carries its own H1; skip the
+    # standalone title injection so we don't double-render the heading.
+    if title and not has_body_md:
         parts.append(f"<h1>{_html_lib.escape(str(title))}</h1>")
-    if subtitle:
+    if subtitle and not has_body_md:
         parts.append(f"<h2>{_html_lib.escape(str(subtitle))}</h2>")
 
     if "body_html" in input_data:
@@ -715,69 +718,253 @@ _SECTION_EMITTERS: dict[str, Any] = {
 
 
 def _md_to_html(md: str) -> str:
-    """Tiny markdown -> HTML converter using re only.
+    """Markdown → HTML converter using ``re`` only (no runtime deps).
 
-    Supports: headings (#/##/###), **bold**, *italic*, `code`,
-    [links](url), unordered bullet lists (- / *), and paragraphs.
+    Supports the subset of GitHub-Flavored Markdown needed to render the
+    repo's own docs (README, CHANGELOG, CONTRIBUTING, etc.):
+
+    * Headings ``#`` … ``####``
+    * ``**bold**``, ``*italic*``, `` `inline code` ``
+    * ``[link](url)`` and ``![alt](url)`` images
+    * Unordered (``-`` / ``*``) and ordered (``1.``) lists
+    * Blockquotes (``> …``) with multi-line content
+    * Horizontal rules (``---``, ``***``, ``___``)
+    * Fenced code blocks with optional language tag (```` ```lang ````)
+    * GFM tables (header row + ``|---|`` separator)
+    * Bare http(s) URL auto-linking
+    * Raw HTML passthrough (single lines starting with ``<`` and
+      ``<!-- … -->`` comments are preserved verbatim)
+
+    Output is wrapped in ``<div class="prose">`` so the atv tier's prose
+    stylesheet can style it without colliding with section-based renders.
     """
     lines = md.split("\n")
     html_lines: list[str] = []
-    in_ul = False
-    in_p = False
+    state: dict[str, Any] = {
+        "in_p": False, "in_ul": False, "in_ol": False,
+        "in_bq": False, "_bq_kind": "",
+    }
 
-    def close_p():
-        nonlocal in_p
-        if in_p:
+    def close_p() -> None:
+        if state["in_p"]:
             html_lines.append("</p>")
-            in_p = False
+            state["in_p"] = False
 
-    def close_ul():
-        nonlocal in_ul
-        if in_ul:
+    def close_ul() -> None:
+        if state["in_ul"]:
             html_lines.append("</ul>")
-            in_ul = False
+            state["in_ul"] = False
+
+    def close_ol() -> None:
+        if state["in_ol"]:
+            html_lines.append("</ol>")
+            state["in_ol"] = False
+
+    def close_bq() -> None:
+        if state["in_bq"]:
+            if state.get("_bq_kind"):
+                html_lines.append("</div></aside>")
+                state["_bq_kind"] = ""  # type: ignore[assignment]
+            else:
+                html_lines.append("</blockquote>")
+            state["in_bq"] = False
+
+    def close_all() -> None:
+        close_p(); close_ul(); close_ol(); close_bq()
 
     def inline(text: str) -> str:
+        # Escape first so user content can't inject HTML; then re-introduce
+        # the small set of markdown-derived tags.
         text = _html_lib.escape(text)
+        # Images before links (both use ``[ … ](…)`` shape).
+        text = re.sub(
+            r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)",
+            r'<img alt="\1" src="\2" loading="lazy" />',
+            text,
+        )
+        text = re.sub(
+            r"\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)",
+            r'<a href="\2">\1</a>',
+            text,
+        )
+        # Bold then italic so ``**foo**`` doesn't get eaten by the italic rule.
         text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-        text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-        text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-        text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
+        text = re.sub(r"__(.+?)__", r"<strong>\1</strong>", text)
+        text = re.sub(r"(?<!\*)\*([^*\n]+?)\*(?!\*)", r"<em>\1</em>", text)
+        # Underscore italics — require word boundaries so we don't mangle
+        # snake_case identifiers like ``opencode_config``.
+        text = re.sub(r"(?<![\w_])_([^_\n]+?)_(?![\w_])", r"<em>\1</em>", text)
+        text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+        # Bare URL auto-link (skip ones already inside an ``href``).
+        text = re.sub(
+            r'(?<!href=")(?<!\()(?<!\[)(?<!src=")(https?://[^\s<>"\']+)',
+            r'<a href="\1">\1</a>',
+            text,
+        )
         return text
 
-    for line in lines:
-        h3 = re.match(r"^### (.+)$", line)
-        h2 = re.match(r"^## (.+)$", line)
-        h1 = re.match(r"^# (.+)$", line)
-        li = re.match(r"^[-*] (.+)$", line)
+    i = 0
+    n = len(lines)
+    table_sep_re = re.compile(
+        r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$"
+    )
 
-        if h3:
-            close_p(); close_ul()
-            html_lines.append(f"<h3>{inline(h3.group(1))}</h3>")
-        elif h2:
-            close_p(); close_ul()
-            html_lines.append(f"<h2>{inline(h2.group(1))}</h2>")
-        elif h1:
-            close_p(); close_ul()
-            html_lines.append(f"<h1>{inline(h1.group(1))}</h1>")
-        elif li:
-            close_p()
-            if not in_ul:
+    while i < n:
+        line = lines[i]
+
+        # Fenced code block (```lang … ```)
+        fence = re.match(r"^```(\w*)\s*$", line)
+        if fence:
+            close_all()
+            lang = fence.group(1) or ""
+            i += 1
+            code_lines: list[str] = []
+            while i < n and not re.match(r"^```\s*$", lines[i]):
+                code_lines.append(lines[i])
+                i += 1
+            i += 1  # skip closing fence (if present)
+            code_html = _html_lib.escape("\n".join(code_lines))
+            lang_attr = f' data-lang="{_html_lib.escape(lang)}"' if lang else ""
+            html_lines.append(
+                f'<pre class="code-block"{lang_attr}><code>{code_html}</code></pre>'
+            )
+            continue
+
+        # GFM table — header row immediately followed by ``|---|`` separator.
+        if "|" in line and i + 1 < n and table_sep_re.match(lines[i + 1]):
+            close_all()
+            headers = [h.strip() for h in line.strip().strip("|").split("|")]
+            html_lines.append('<table class="md">')
+            html_lines.append("<thead><tr>")
+            for h in headers:
+                html_lines.append(f"<th>{inline(h)}</th>")
+            html_lines.append("</tr></thead>")
+            i += 2  # skip header and separator
+            html_lines.append("<tbody>")
+            while i < n and "|" in lines[i] and lines[i].strip():
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                html_lines.append("<tr>")
+                for c in cells:
+                    html_lines.append(f"<td>{inline(c)}</td>")
+                html_lines.append("</tr>")
+                i += 1
+            html_lines.append("</tbody></table>")
+            continue
+
+        # Horizontal rule (---, ***, ___, optionally spaced).
+        if re.match(r"^\s*(?:-\s*){3,}$|^\s*(?:\*\s*){3,}$|^\s*(?:_\s*){3,}$", line):
+            close_all()
+            html_lines.append("<hr />")
+            i += 1
+            continue
+
+        # ATX headings ``# `` … ``#### ``
+        heading = re.match(r"^(#{1,4})\s+(.+?)\s*#*\s*$", line)
+        if heading:
+            close_all()
+            level = len(heading.group(1))
+            html_lines.append(
+                f"<h{level}>{inline(heading.group(2))}</h{level}>"
+            )
+            i += 1
+            continue
+
+        # Blockquote (``> …``), possibly with empty ``>`` line as separator.
+        # GFM alert syntax (``> [!NOTE]`` etc.) renders as a typed callout
+        # panel instead of a plain blockquote.
+        bq = re.match(r"^>\s?(.*)$", line)
+        if bq:
+            close_p(); close_ul(); close_ol()
+            content = bq.group(1)
+            alert_m = re.match(
+                r"^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$",
+                content,
+            )
+            if alert_m and not state["in_bq"]:
+                kind = alert_m.group(1).lower()
+                rest = alert_m.group(2).strip()
+                html_lines.append(
+                    f'<aside class="callout callout-{kind}">'
+                    f'<div class="callout-label">{kind.upper()}</div>'
+                    f'<div class="callout-body">'
+                )
+                state["in_bq"] = True
+                state["_bq_kind"] = kind  # type: ignore[assignment]
+                if rest:
+                    html_lines.append(inline(rest) + "<br />")
+                i += 1
+                continue
+            if not state["in_bq"]:
+                html_lines.append("<blockquote>")
+                state["in_bq"] = True
+            if content.strip():
+                html_lines.append(inline(content) + "<br />")
+            else:
+                html_lines.append("<br />")
+            i += 1
+            continue
+
+        # Unordered list
+        ul = re.match(r"^[-*+]\s+(.+)$", line)
+        if ul:
+            close_p(); close_ol(); close_bq()
+            if not state["in_ul"]:
                 html_lines.append("<ul>")
-                in_ul = True
-            html_lines.append(f"<li>{inline(li.group(1))}</li>")
-        elif line.strip() == "":
-            close_p(); close_ul()
-        else:
-            close_ul()
-            if not in_p:
-                html_lines.append("<p>")
-                in_p = True
-            html_lines.append(inline(line))
+                state["in_ul"] = True
+            html_lines.append(f"<li>{inline(ul.group(1))}</li>")
+            i += 1
+            continue
 
-    close_p()
-    close_ul()
-    return "\n".join(html_lines)
+        # Ordered list
+        ol = re.match(r"^\d+\.\s+(.+)$", line)
+        if ol:
+            close_p(); close_ul(); close_bq()
+            if not state["in_ol"]:
+                html_lines.append("<ol>")
+                state["in_ol"] = True
+            html_lines.append(f"<li>{inline(ol.group(1))}</li>")
+            i += 1
+            continue
+
+        # Raw HTML comment — preserve verbatim and consume until ``-->``.
+        if line.lstrip().startswith("<!--"):
+            close_all()
+            buf = [line]
+            while "-->" not in line and i + 1 < n:
+                i += 1
+                line = lines[i]
+                buf.append(line)
+            html_lines.extend(buf)
+            i += 1
+            continue
+
+        # Raw HTML line (preserve as-is — caller-trusted markdown).
+        if re.match(r"^\s*<[a-zA-Z!/]", line):
+            close_all()
+            html_lines.append(line)
+            i += 1
+            continue
+
+        # Blank line → close any open block.
+        if line.strip() == "":
+            close_all()
+            i += 1
+            continue
+
+        # Default: paragraph continuation. Blockquote takes precedence so it
+        # absorbs multi-line content.
+        if state["in_bq"]:
+            html_lines.append(inline(line) + " ")
+            i += 1
+            continue
+        if not state["in_p"]:
+            html_lines.append("<p>")
+            state["in_p"] = True
+        html_lines.append(inline(line))
+        i += 1
+
+    close_all()
+    return '<div class="prose">\n' + "\n".join(html_lines) + "\n</div>"
 
 
 def _rows_to_table(rows: list[dict]) -> str:
