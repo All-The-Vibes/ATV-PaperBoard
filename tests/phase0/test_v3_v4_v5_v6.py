@@ -1,7 +1,10 @@
 """tests/phase0/test_v3_v4_v5_v6.py
 
-V3: skip — requires real Claude Code session.
-V4: skip — requires real Codex CLI session.
+V3 (Claude Code hook propagates CLAUDE_PLUGIN_DATA) and V4 (Codex PostToolUse
+fires on Write) are validated manually against real harness sessions; see
+docs/checkpoints 001-native-copilot-cli-adapter and 002-real-copilot-cli-
+sandbox-valid for the recorded evidence. They have no automatable form here.
+
 V5: parametrize over 5 mock environments, assert detect_harness() returns expected value.
 V6: assert python/py is resolvable on PATH.
 """
@@ -16,24 +19,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.detect import detect_harness
-
-# ---------------------------------------------------------------------------
-# V3 / V4 — real-session tests (skip in CI / automated runs)
-# ---------------------------------------------------------------------------
-
-@pytest.mark.harness_claude_code
-@pytest.mark.skip(reason="requires real Claude Code session")
-def test_v3_hook_inherits_claude_plugin_data() -> None:
-    """V3: hook command subprocess in Claude Code inherits CLAUDE_PLUGIN_DATA."""
-    ...  # pragma: no cover
-
-
-@pytest.mark.harness_codex
-@pytest.mark.skip(reason="requires real Codex CLI session")
-def test_v4_codex_hook_fires_on_write() -> None:
-    """V4: Codex [[hooks.PostToolUse]] block fires on Write tool."""
-    ...  # pragma: no cover
-
 
 # ---------------------------------------------------------------------------
 # V5 — detect_harness() mock-env parametrize

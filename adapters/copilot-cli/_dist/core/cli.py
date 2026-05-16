@@ -404,6 +404,19 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
                 lint_status = "✓ clean"
         except ImportError:
             lint_status = "(bridge.py not available)"
+        except Exception as exc:  # noqa: BLE001
+            # Catch BridgeEnvError + any other bridge failure so `doctor` itself
+            # never crashes. Doctor's job is to *diagnose* problems, not to
+            # propagate them as unhandled tracebacks. Print a friendly summary
+            # and a copy-pasteable remediation.
+            from core.bridge import BridgeEnvError  # noqa: PLC0415
+            if isinstance(exc, BridgeEnvError):
+                lint_status = (
+                    "✗ bridge unavailable — Enforce pillar is silently degraded\n"
+                    "                              fix: `npm install -g @google/design.md@0.1.1`"
+                )
+            else:
+                lint_status = f"✗ unexpected error: {type(exc).__name__}: {exc}"
     else:
         lint_status = "paperboard.DESIGN.md not found"
     print(f"  paperboard.DESIGN.md lint: {lint_status}")

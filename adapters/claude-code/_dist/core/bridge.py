@@ -95,14 +95,41 @@ def _resolve_binary() -> tuple[str, str]:
             "node not found on PATH. Install Node.js (>=18) and re-run."
         )
 
-    # Locate @google/design.md dist/index.js relative to this project
-    # Walk upward from this file's directory looking for node_modules.
-    candidate_roots = [
-        Path(__file__).parent.parent,  # repo root (most common)
+    # Locate @google/design.md dist/index.js. Search order:
+    #   1. node_modules adjacent to this package (repo dev clone)
+    #   2. node_modules in the current working directory
+    #   3. global npm root (e.g. after `npm install -g @google/design.md`)
+    candidate_roots: list[Path] = [
+        Path(__file__).parent.parent,  # repo root for dev clones
         Path.cwd(),
     ]
+
+    # Append global npm root if `npm` is available. This lets users do a
+    # one-shot `npm install -g @google/design.md@0.1.1` from anywhere and
+    # have the bridge find it without cloning the repo.
+    npm_exe = shutil.which("npm")
+    if npm_exe:
+        try:
+            global_root = subprocess.run(
+                [npm_exe, "root", "-g"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=10,
+            )
+            if global_root.returncode == 0:
+                stripped = global_root.stdout.strip()
+                if stripped:
+                    candidate_roots.append(Path(stripped))
+        except (subprocess.SubprocessError, OSError):
+            pass
+
     bin_js = None
     for root in candidate_roots:
+        candidate = root / "@google" / "design.md" / "dist" / "index.js"
+        if candidate.exists():
+            bin_js = str(candidate)
+            break
         candidate = root / "node_modules" / "@google" / "design.md" / "dist" / "index.js"
         if candidate.exists():
             bin_js = str(candidate)
@@ -110,7 +137,9 @@ def _resolve_binary() -> tuple[str, str]:
 
     if not bin_js:
         raise BridgeEnvError(
-            "@google/design.md dist/index.js not found. Run `npm install` in the project root."
+            "@google/design.md dist/index.js not found. Install it via\n"
+            "    npm install -g @google/design.md@0.1.1\n"
+            "or, in a clone of the atv-paperboard repo, run `npm install`."
         )
 
     _save_cache({"node_exe": node_exe, "bin_js": bin_js})

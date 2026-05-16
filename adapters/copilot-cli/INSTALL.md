@@ -9,7 +9,12 @@ lives in `recipes/github-actions/` and targets the Copilot Coding Agent.
 - [`copilot` CLI](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-cli-plugins) installed and authenticated
 - Python 3.10+ on PATH
 - `paperboard` on PATH (`pip install atv-paperboard` or `pipx install atv-paperboard`)
-- Node.js 20+ for the `@google/design.md` lint bridge
+- Node.js 18+ on PATH plus the `@google/design.md` lint binary:
+  ```bash
+  npm install -g @google/design.md@0.1.1
+  ```
+  Without this, the bridge falls back to a Python-only path and the Enforce
+  pillar silently degrades. Run `paperboard doctor` to verify.
 
 ## Path A — Marketplace install (recommended)
 

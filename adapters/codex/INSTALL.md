@@ -4,6 +4,20 @@ Three install paths are provided. Choose the one that matches your setup.
 
 ---
 
+## Prerequisites (all paths)
+
+- Codex CLI installed and authenticated
+- Python 3.10+ on PATH (`pip install atv-paperboard`)
+- Node.js 18+ on PATH plus the `@google/design.md` lint binary:
+  ```bash
+  npm install -g @google/design.md@0.1.1
+  ```
+  Without this, design lint silently degrades to a Python fallback. Run
+  `paperboard doctor` to confirm `@google/design.md: 0.1.1` and
+  `paperboard.DESIGN.md lint: ✓ clean`.
+
+---
+
 ## Path A — Recommended: Skill + Hook
 
 Install the skill and register the PostToolUse hook so Codex automatically suggests

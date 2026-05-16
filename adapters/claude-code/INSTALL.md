@@ -4,6 +4,8 @@
 
 - Claude Code with plugin support enabled
 - Python 3.10+ on PATH
+- **Node.js 18+ on PATH** — the Enforce pillar runs `@google/design.md`
+  via Node. Without it, design lint silently degrades to a Python fallback.
 - **`paperboard` on PATH** — the plugin's PostToolUse hook invokes the
   `paperboard` binary directly. Install via PyPI first:
   ```bash
@@ -11,6 +13,12 @@
   # or, for an isolated CLI install:
   pipx install atv-paperboard
   ```
+- **`@google/design.md`** — the lint binary the bridge calls:
+  ```bash
+  npm install -g @google/design.md@0.1.1
+  ```
+  After install, run `paperboard doctor` and confirm the `@google/design.md`
+  row shows `0.1.1` and the `paperboard.DESIGN.md lint` row shows `✓ clean`.
 
 ---
 

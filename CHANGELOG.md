@@ -10,9 +10,20 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+### Fixed
+- **`paperboard doctor` no longer crashes when `@google/design.md` is missing.** Previously hit an unhandled `BridgeEnvError` traceback at the lint step; now catches the error and reports `✗ bridge unavailable — Enforce pillar is silently degraded` with a copy-pasteable `npm install -g @google/design.md@0.1.1` remediation line.
+- **Bridge resolves `@google/design.md` from a global npm install.** `core/bridge.py::_resolve_binary` now queries `npm root -g` (with a 10 s timeout and graceful failure) in addition to the existing local `node_modules/` candidates, so a `pip install atv-paperboard` + `npm install -g @google/design.md@0.1.1` flow works from any cwd without cloning the repo.
+
 ### Changed
 - **Default tier is now `atv`** (the dark designed-document template that properly showcases the neubrutalism palette). Previously the `paperboard render` CLI silently fell back to `pico` even though every SKILL.md, the Copilot Coding Agent instructions template, and the GH Actions recipe all promised `atv` as the default. Now the docs match reality: omitting `--tier` produces the rich dark artifact every harness's SKILL.md describes. Pass `--tier pico` or `--tier daisy` explicitly for the light, framework-styled tiers.
 - Regenerated `examples/output/` (`build-status`, `bug-hunt`, `harness-comparison`, `gallery`) against the new default so the README's "What you get" links show neubrutalism in its canonical atv presentation.
+
+### Documentation
+- **README install section rewritten** with an explicit prerequisites table (Python 3.10+, Node.js 18+, `npm install -g @google/design.md@0.1.1`, `pip install atv-paperboard`) and a `paperboard doctor` verify step in every harness's install block. Quick start no longer requires a repo clone.
+- **Per-adapter `INSTALL.md` files** (`adapters/{claude-code,copilot-cli,codex}/INSTALL.md`) now have consistent Node.js + `@google/design.md` prerequisites. Previously the Claude Code and Codex INSTALL.md files didn't mention Node at all; Copilot CLI mentioned Node but had no install command for the lint binary.
+
+### Tests
+- Removed two permanently-skipped V3/V4 placeholder stubs from `tests/phase0/test_v3_v4_v5_v6.py` (`harness_claude_code` and `harness_codex` markers were hardcoded to skip and the function bodies were `...` — they asserted nothing). The original Phase-0 V3 (Claude Code hook propagates `CLAUDE_PLUGIN_DATA`) and V4 (Codex `PostToolUse` fires on Write) were validated manually against real harness sessions and remain documented under the 0.1.2 release notes. Baseline is now **130 passed, 0 skipped**.
 
 ### Philosophy
 - Embedded the core motivation in the README — Karpathy's progression (text → markdown → HTML → interactive sims) and Thariq's "Unreasonable Effectiveness of HTML" piece, with four explicit philosophy principles tied to the four pillars.

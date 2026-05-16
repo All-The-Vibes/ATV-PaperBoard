@@ -62,14 +62,29 @@ It's the same toolkit, the same contract, the same `core/` Python package — wi
 
 ## Install — pick your harness
 
-> **Prereq for every native plugin**: `pip install atv-paperboard` (Python 3.10+).
-> The Python package ships the `paperboard` binary that every harness's hook
-> invokes; the plugin manifest itself only registers the agent, skills, and hook.
+### Prerequisites (all paths)
+
+| Requirement | Why | Install |
+|---|---|---|
+| **Python 3.10+** | ships the `paperboard` CLI every harness's hook invokes | system installer |
+| **Node.js 18+** | the [`@google/design.md`](https://github.com/google-labs-code/design.md) lint bridge runs on Node — without it the **Enforce pillar silently degrades** | system installer |
+| **`@google/design.md` 0.1.1** | the actual lint binary | `npm install -g @google/design.md@0.1.1` |
+| **`atv-paperboard`** | the Python CLI + templates + default design | `pip install atv-paperboard` |
+
+```bash
+# One-shot prereqs (works from anywhere — no repo clone needed)
+pip install atv-paperboard
+npm install -g @google/design.md@0.1.1
+paperboard doctor   # should show ✓ on every line
+```
+
+`paperboard doctor` is the canonical health check — run it after every install path below. If `@google/design.md` shows `not installed` or the lint row shows `✗ bridge unavailable`, the Enforce pillar is degraded and renders skip the real design lint (Python fallback only). Fix that before anything else.
 
 ### GitHub Copilot CLI (native plugin)
 
 ```bash
 pip install atv-paperboard
+npm install -g @google/design.md@0.1.1
 # Then inside copilot (interactive):
 /plugin marketplace add All-The-Vibes/ATV-PaperBoard
 /plugin install atv-paperboard@atv-paperboard
@@ -81,6 +96,7 @@ Full instructions: [`adapters/copilot-cli/INSTALL.md`](adapters/copilot-cli/INST
 
 ```bash
 pip install atv-paperboard
+npm install -g @google/design.md@0.1.1
 # Then inside Claude Code:
 /plugin marketplace add All-The-Vibes/ATV-PaperBoard
 /plugin install atv-paperboard@atv-paperboard
@@ -92,6 +108,7 @@ Full instructions: [`adapters/claude-code/INSTALL.md`](adapters/claude-code/INST
 
 ```bash
 pip install atv-paperboard
+npm install -g @google/design.md@0.1.1
 git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
 # Optional: add the hook to ~/.codex/config.toml (see INSTALL.md)
 ```
@@ -101,27 +118,29 @@ Full instructions: [`adapters/codex/INSTALL.md`](adapters/codex/INSTALL.md)
 ### GitHub Copilot Coding Agent (Actions recipe)
 
 ```bash
-pip install atv-paperboard
 cp recipes/github-actions/*.template .github/
 # Rename the .template extensions and fill in repo-specific values
 ```
 
-Full instructions: [`recipes/github-actions/INSTALL.md`](recipes/github-actions/INSTALL.md)
+The workflow installs both `atv-paperboard` (pip) and `@google/design.md` (npm) in CI — no extra setup on your machine. Full instructions: [`recipes/github-actions/INSTALL.md`](recipes/github-actions/INSTALL.md)
 
 ## Quick start (standalone — no harness needed)
 
-Requires Node.js + Python 3.10+.
+Requires Python 3.10+ and Node.js 18+.
 
 ```bash
-git clone https://github.com/All-The-Vibes/ATV-PaperBoard
-cd ATV-PaperBoard
-npm install
-pip install -e .
-python -m core.cli render --input examples/inputs/build-status.json --output-dir ./out
-python -m core.cli gallery --output-dir ./out
+pip install atv-paperboard
+npm install -g @google/design.md@0.1.1
+
+# Render a sample artifact (default tier is `atv` — dark designed-document)
+echo '{"title":"Hello","columns":["item","status"],"rows":[["paperboard","ok"]]}' | \
+  paperboard render --input - --output-dir ./out
+paperboard gallery --output-dir ./out
 ```
 
-`render` auto-triggers gallery regeneration. `--output-dir` overrides the harness-resolved persistence path for every subcommand.
+You'll get `out/<slug>.html`, `out/<slug>.DESIGN.md`, `out/<slug>.meta.yaml`, and `out/gallery.html` — a single neubrutalism-styled artifact + an auto-regenerated compounding gallery. The browser auto-opens on render unless `--no-open` is passed or the environment is headless.
+
+To work on paperboard itself (instead of just using it), clone the repo and run `npm install && pip install -e .` from the root — that's the only path that exercises `core/`'s source directly.
 
 ## What you get
 

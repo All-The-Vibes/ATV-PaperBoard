@@ -103,15 +103,13 @@ Optional but recommended for cross-platform parity:
 pytest tests/ -q
 ```
 
-Expected baseline: **130 passed, 2 skipped**. The two skipped tests are real-session gates (`harness_claude_code`, `harness_codex`) that require a live agent session and are not run in CI.
+Expected baseline: **130 passed**, no skips. The previous V3/V4 live-harness gates were placeholder stubs (no assertions) and have been removed; the original Phase-0 V3 (Claude Code hook propagates `CLAUDE_PLUGIN_DATA`) and V4 (Codex `PostToolUse` fires on Write) were validated manually against real harness sessions and are documented in the project changelog.
 
 ### Selecting by marker
 
 | Marker | Scope | Default? |
 |---|---|---|
 | `phase0` | Cross-harness empirical verification (V1–V6) — requires Node + `@google/design.md` installed | ✅ runs |
-| `harness_claude_code` | Tests requiring a real Claude Code session | ⏭ skipped |
-| `harness_codex` | Tests requiring a real Codex CLI session | ⏭ skipped |
 | `slow` | Tests that take >5 seconds | ✅ runs |
 
 Run a subset:

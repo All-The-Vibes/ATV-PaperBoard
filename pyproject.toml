@@ -79,8 +79,6 @@ testpaths = ["tests"]
 addopts = "-ra -q"
 markers = [
     "phase0: Phase 0 empirical verification tests (require Node + @google/design.md)",
-    "harness_claude_code: Tests requiring a real Claude Code session",
-    "harness_codex: Tests requiring a real Codex CLI session",
     "slow: Tests that take >5 seconds",
 ]
 
