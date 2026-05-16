@@ -152,9 +152,10 @@ The lint isn't generic "is this valid markdown" — it's a token-trace. If your 
 
 ### The render tiers (Pico vs daisyUI)
 
-Two Jinja2 templates ship out of the box:
+Two Jinja2 templates ship out of the box (plus the default `atv` tier):
 
-- **`pico-tier`** — minimal, classless CSS via [Pico](https://picocss.com/). Sub-20KB HTML. Use for dashboards, status snapshots, plain reports. Default.
+- **`atv-tier`** — dark designed-document presentation; the canonical render that shows off the neubrutalism palette. **Default.** Use for dashboards, reports, and any rich multi-section output — the right answer in almost all cases.
+- **`pico-tier`** — minimal, classless CSS via [Pico](https://picocss.com/). Sub-20KB HTML. Use only when the target audience explicitly wants a lightweight, framework-styled document.
 - **`daisy-tier`** — richer component palette via [daisyUI](https://daisyui.com/). Use for marketing-grade hero artifacts.
 
 Both consume the same design tokens via a **token-rename layer** in `core/render.py` that bridges `@google/design.md export tailwind` output to each framework's CSS variables (`--pico-primary` for Pico, `--p` for daisyUI). Adding a new tier = new Jinja template + new rename block; no changes to validation or persistence.
@@ -295,6 +296,7 @@ atv-paperboard/
 │   └── glass.DESIGN.md                      # opt-in premium tier
 │
 ├── templates/
+│   ├── atv-tier.html.j2                     # default — dark designed-document
 │   ├── pico-tier.html.j2
 │   ├── daisy-tier.html.j2
 │   └── gallery.html.j2
@@ -308,7 +310,7 @@ The same SKILL.md files end up inside Claude Code's `/plugin install`, Codex's `
 ## CLI surface
 
 ```bash
-paperboard render [--design <name|path|url>] [--tier pico|daisy] [--input <path>]
+paperboard render [--design <name|path|url>] [--tier atv|pico|daisy] [--input <path>]
 paperboard validate <slug>
 paperboard regenerate <slug>
 paperboard gallery

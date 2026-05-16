@@ -10,6 +10,13 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+### Changed
+- **Default tier is now `atv`** (the dark designed-document template that properly showcases the neubrutalism palette). Previously the `paperboard render` CLI silently fell back to `pico` even though every SKILL.md, the Copilot Coding Agent instructions template, and the GH Actions recipe all promised `atv` as the default. Now the docs match reality: omitting `--tier` produces the rich dark artifact every harness's SKILL.md describes. Pass `--tier pico` or `--tier daisy` explicitly for the light, framework-styled tiers.
+- Regenerated `examples/output/` (`build-status`, `bug-hunt`, `harness-comparison`, `gallery`) against the new default so the README's "What you get" links show neubrutalism in its canonical atv presentation.
+
+### Philosophy
+- Embedded the core motivation in the README — Karpathy's progression (text → markdown → HTML → interactive sims) and Thariq's "Unreasonable Effectiveness of HTML" piece, with four explicit philosophy principles tied to the four pillars.
+
 ---
 
 ## [0.1.2] — 2026-05-16

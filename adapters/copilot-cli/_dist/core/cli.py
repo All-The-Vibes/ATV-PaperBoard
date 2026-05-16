@@ -55,8 +55,8 @@ def main(argv: list[str] | None = None) -> int:
     p_render.add_argument(
         "--tier",
         choices=["pico", "daisy", "atv"],
-        default="pico",
-        help="CSS framework tier (default: pico)",
+        default="atv",
+        help="CSS framework tier (default: atv — the dark designed-document tier)",
     )
     p_render.add_argument(
         "--no-open",

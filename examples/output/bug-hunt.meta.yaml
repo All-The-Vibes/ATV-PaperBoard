@@ -1,7 +1,7 @@
-created_at: '2026-05-16T17:13:48.331840+00:00'
-design: C:\Users\shyamsridhar\code\atv-paperboard\designs\paperboard.DESIGN.md
+created_at: '2026-05-16T18:53:23.644815+00:00'
+design: C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md
 generator: atv-paperboard/0.1.0
 harness: codex
 lint_passed: true
 slug: bug-hunt
-tier: pico
+tier: atv
