@@ -103,7 +103,9 @@ class TestHooksJson:
             if entry.get("matcher") == "Write":
                 for hook in entry.get("hooks", []):
                     cmd = hook.get("command", "")
-                    assert "cli.py" in cmd, "hook command should reference cli.py"
+                    # Hook invokes the PyPI-installed `paperboard` binary
+                    # directly (previously: `python ... core/cli.py`).
+                    assert "paperboard" in cmd, "hook command should reference the paperboard binary"
                     assert "detect-artifact-candidate" in cmd
 
 

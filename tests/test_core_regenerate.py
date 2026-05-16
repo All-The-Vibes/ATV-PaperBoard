@@ -18,7 +18,7 @@ from core.validate import ValidationResult
 
 
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
-DEFAULT_DESIGN = Path(__file__).parent.parent / "designs" / "paperboard.DESIGN.md"
+DEFAULT_DESIGN = Path(__file__).parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
 
 _FAILING_VALIDATION = ValidationResult(
     passed=False,

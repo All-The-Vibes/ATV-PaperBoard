@@ -21,7 +21,7 @@ MINIMAL_FIXTURE = (
     Path(__file__).parent.parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
 )
 PAPERBOARD_DESIGN = (
-    Path(__file__).parent.parent.parent / "designs" / "paperboard.DESIGN.md"
+    Path(__file__).parent.parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
 )
 
 

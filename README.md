@@ -45,15 +45,17 @@ It's the same toolkit, the same contract, the same `core/` Python package — wi
 
 ## Install — pick your harness
 
+> **Prereq for every native plugin**: `pip install atv-paperboard` (Python 3.10+).
+> The Python package ships the `paperboard` binary that every harness's hook
+> invokes; the plugin manifest itself only registers the agent, skills, and hook.
+
 ### GitHub Copilot CLI (native plugin)
 
 ```bash
-git clone https://github.com/All-The-Vibes/ATV-PaperBoard
-cd ATV-PaperBoard
-pip install -e .
-python adapters/copilot-cli/build.py
-copilot --plugin-dir="$(pwd)/adapters/copilot-cli/_dist"
-# Or, inside copilot:  /plugin marketplace add All-The-Vibes/ATV-PaperBoard
+pip install atv-paperboard
+# Then inside copilot (interactive):
+/plugin marketplace add All-The-Vibes/ATV-PaperBoard
+/plugin install atv-paperboard@atv-paperboard
 ```
 
 Full instructions: [`adapters/copilot-cli/INSTALL.md`](adapters/copilot-cli/INSTALL.md)
@@ -61,10 +63,10 @@ Full instructions: [`adapters/copilot-cli/INSTALL.md`](adapters/copilot-cli/INST
 ### Claude Code (native plugin)
 
 ```bash
-git clone https://github.com/All-The-Vibes/ATV-PaperBoard
+pip install atv-paperboard
 # Then inside Claude Code:
 /plugin marketplace add All-The-Vibes/ATV-PaperBoard
-/plugin install atv-paperboard@<marketplace>
+/plugin install atv-paperboard@atv-paperboard
 ```
 
 Full instructions: [`adapters/claude-code/INSTALL.md`](adapters/claude-code/INSTALL.md)
@@ -72,6 +74,7 @@ Full instructions: [`adapters/claude-code/INSTALL.md`](adapters/claude-code/INST
 ### Codex CLI (native plugin)
 
 ```bash
+pip install atv-paperboard
 git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
 # Optional: add the hook to ~/.codex/config.toml (see INSTALL.md)
 ```

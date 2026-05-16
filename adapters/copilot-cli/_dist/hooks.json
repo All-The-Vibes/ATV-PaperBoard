@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "matcher": "^(create|edit)$",
+        "bash": "paperboard copilot-post-tool-use",
+        "powershell": "paperboard copilot-post-tool-use",
+        "timeoutSec": 30,
+        "env": {
+          "PAPERBOARD_HARNESS": "copilot-cli"
+        }
+      }
+    ]
+  }
+}

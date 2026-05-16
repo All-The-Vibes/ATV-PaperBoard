@@ -88,5 +88,7 @@ temp/
 coverage/
 .nyc_output/
 
-# Adapter build outputs (per-adapter `_dist/` produced by build.py)
-adapters/*/_dist/
+# Adapter build outputs (per-adapter `_dist/` produced by build.py).
+# _dist/ trees are committed so the marketplace manifests in `.claude-plugin/`
+# and `.github/plugin/` can reference them as plugin sources. Rebuild with
+# `python adapters/<harness>/build.py` and commit the diff.

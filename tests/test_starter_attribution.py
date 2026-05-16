@@ -23,8 +23,8 @@ import yaml
 # Paths
 # ---------------------------------------------------------------------------
 REPO_ROOT = Path(__file__).parent.parent
-STARTERS_DIR = REPO_ROOT / "designs" / "starters"
-DESIGNS_DIR = REPO_ROOT / "designs"
+STARTERS_DIR = REPO_ROOT / "core" / "designs" / "starters"
+DESIGNS_DIR = REPO_ROOT / "core" / "designs"
 
 # ---------------------------------------------------------------------------
 # §17 required attribution keys

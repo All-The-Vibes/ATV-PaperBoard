@@ -31,8 +31,9 @@ REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
 ADAPTER_DIR = Path(__file__).parent.resolve()
 DIST_DIR = ADAPTER_DIR / "_dist"
 
-# Directories from repo root to include verbatim
-INCLUDE_DIRS = ["core", "skills", "designs", "templates"]
+# Directories from repo root to include verbatim. `core` now contains
+# templates/ and designs/ as package-data, so they ride along.
+INCLUDE_DIRS = ["core", "skills"]
 
 # Adapter-local files/dirs to include (relative to ADAPTER_DIR).
 # hooks.json lives at the plugin root (not under hooks/) per Copilot CLI's

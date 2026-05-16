@@ -14,7 +14,7 @@ import pytest
 import yaml
 
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
-PAPERBOARD_DESIGN = Path(__file__).parent.parent / "designs" / "paperboard.DESIGN.md"
+PAPERBOARD_DESIGN = Path(__file__).parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
 
 
 def _render(input_data: dict, design: Path = MINIMAL_DESIGN, tier: str = "pico") -> tuple[dict, Path]:

@@ -100,7 +100,7 @@ def test_gallery_auto_regen_after_render(tmp_path):
     _gallery._resolve_artifact_dir = lambda h: art_dir
     try:
         # Render creates the artifact triple
-        design = Path(__file__).parent.parent / "designs" / "paperboard.DESIGN.md"
+        design = Path(__file__).parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
         render_artifact(
             input_data={"title": "Auto Regen Test", "body_html": "<p>hello</p>"},
             design_path=design,

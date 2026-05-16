@@ -12,7 +12,7 @@ rendering when you produce dashboards, comparison tables, or benchmark results.
 **Step 1 — Clone the skill:**
 
 ```bash
-git clone https://github.com/<owner>/atv-paperboard ~/.agents/skills/atv-paperboard
+git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
 ```
 
 **Step 2 — Install Python dependencies:**
@@ -41,7 +41,7 @@ Or open `~/.codex/config.toml` in your editor and paste the contents of
 Install the skill but skip the config edit. You invoke `paperboard render` manually.
 
 ```bash
-git clone https://github.com/<owner>/atv-paperboard ~/.agents/skills/atv-paperboard
+git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
 pip install atv-paperboard
 ```
 

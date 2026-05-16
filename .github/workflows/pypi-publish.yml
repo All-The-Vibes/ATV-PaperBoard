@@ -1,0 +1,64 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    name: Build wheel + sdist and publish via Trusted Publishing
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/atv-paperboard
+    permissions:
+      # IMPORTANT: id-token: write is required for PyPI Trusted Publishing (OIDC).
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify tag matches pyproject version
+        # Refuse to publish if the git tag and pyproject.toml drift apart.
+        # Tag format: v0.1.2 → strip leading 'v' and compare against
+        # `project.version` in pyproject.toml.
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          tag_version="${tag#v}"
+          py_version="$(python -c "import tomllib,sys; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          echo "git tag      : ${tag} (parsed: ${tag_version})"
+          echo "pyproject    : ${py_version}"
+          if [ "${tag_version}" != "${py_version}" ]; then
+            echo "::error::Tag ${tag} does not match pyproject.toml version ${py_version}. Refusing to publish."
+            exit 1
+          fi
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Verify packages
+        run: python -m twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # No password / API token — Trusted Publishing uses OIDC.
+          # The matching PyPI publisher must specify:
+          #   owner: All-The-Vibes
+          #   repo:  ATV-PaperBoard
+          #   workflow_filename: pypi-publish.yml
+          #   environment: pypi
+          print-hash: true

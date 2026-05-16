@@ -10,13 +10,31 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+---
+
+## [0.1.2] — 2026-05-16
+
+First version published to **PyPI** (`pip install atv-paperboard`). Earlier
+`0.1.0-preview` / `0.1.1` tags were repo-local only.
+
 ### Added
 - **GitHub Copilot CLI adapter** (`adapters/copilot-cli/`) — native plugin (agents, skills, hook). Validated end-to-end against `copilot.exe v1.0.49` inside a fully isolated sandbox (`USERPROFILE` / `HOME` / `COPILOT_HOME` pinned). Hook fires, payload parses, suggestion injects, file lands, `exit=0`.
 - Per-adapter `INSTALL.md` covering local-dev (`--plugin-dir`) and marketplace install flows.
 - 60-second teaser video (`assets/paperboard-teaser.mp4`, 1.4 MB H.264) embedded inline at the top of the README via a `user-attachments` URL so it auto-plays on github.com.
+- **PyPI Trusted Publishing workflow** (`.github/workflows/pypi-publish.yml`) — `v*` tag push → OIDC publish to PyPI via `environment: pypi`. Tag-vs-pyproject version consistency check prevents accidental drift.
+- **Plugin marketplace manifests** at the canonical locations for each harness: `.claude-plugin/marketplace.json` (Claude Code) and `.github/plugin/marketplace.json` (Copilot CLI). One-command install:
+  - Claude Code: `/plugin marketplace add All-The-Vibes/ATV-PaperBoard`
+  - Copilot CLI: `copilot plugin install All-The-Vibes/ATV-PaperBoard`
 
 ### Changed
+- **Package layout.** `templates/` and `designs/` moved inside `core/` and declared as `[tool.setuptools.package-data]` so a `pip install atv-paperboard` wheel actually ships the Jinja templates and DESIGN.md files (previously the wheel installed an unusable `paperboard` binary that crashed on first render).
+- **Plugin hook commands** invoke the PyPI-installed `paperboard` binary directly instead of `python ${CLAUDE_PLUGIN_ROOT}/core/cli.py …`. Plugin downloads are smaller; the Python core is updated independently via `pip install -U atv-paperboard`.
 - **README rewrite.** All public-facing technical content now lives in `README.md`: artifact triple, render tiers (Pico vs daisyUI), auto-detection precedence ladder, per-harness persistence paths, three integration patterns, hook heuristic, three Copilot surfaces disambiguation, Copilot CLI fail-open hook semantics + `additionalContext` channel, explicit non-goals, threat model, full CLI surface.
+- **Plugin manifest versions synchronized** at `0.1.2` across `pyproject.toml`, `adapters/claude-code/.claude-plugin/plugin.json`, and `adapters/copilot-cli/plugin.json`. Copilot CLI manifest license corrected `MIT` → `Apache-2.0`.
+
+### Fixed
+- **Example sample slugs.** `examples/inputs/{build-status,harness-comparison,bug-hunt}.json` had long verbose titles producing 50-character slug filenames that didn't match the README links. Titles shortened; subtitles preserve context.
+- Stale `<org>` placeholder in `adapters/claude-code/.claude-plugin/plugin.json` replaced with `All-The-Vibes`.
 
 ### Removed
 - Internal spec documents (`SPEC.md`, `SPEC-review-*.md`, `SPEC-addendum-*.md`) are no longer published with the repo. They remain on contributors' local disks as reasoning records but are now gitignored (`SPEC*.md`). All user-facing material was lifted into the README.
@@ -84,7 +102,8 @@ Initial private/limited release. Three native adapters + one CI recipe, shared P
 
 ---
 
-[Unreleased]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.0-preview...v0.1.1
 [0.1.0-preview]: https://github.com/All-The-Vibes/ATV-PaperBoard/releases/tag/v0.1.0-preview
 

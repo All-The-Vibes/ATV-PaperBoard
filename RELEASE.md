@@ -31,22 +31,42 @@ Build and validate the distribution before touching real PyPI.
 
 ---
 
-## Real PyPI publish
+## Real PyPI publish (Trusted Publishing via GitHub Actions)
 
-Only run this section after the Test PyPI gate is fully green.
+PyPI publish is automated. **No twine token, no manual upload.** The `.github/workflows/pypi-publish.yml` workflow triggers on `v*` tag push, uses OIDC to authenticate to PyPI, builds sdist + wheel, runs `twine check`, then publishes.
 
-- [ ] `twine upload dist/*` — upload succeeds; confirm at `https://pypi.org/project/atv-paperboard/`
+### One-time PyPI publisher setup
+
+Done once per project, by a PyPI account that owns or will own the `atv-paperboard` project name.
+
+1. Go to https://pypi.org/manage/account/publishing/
+2. Add a **Pending publisher** (works even before the project exists — the first publish claims the name):
+   - PyPI Project Name: `atv-paperboard`
+   - Owner: `All-The-Vibes`
+   - Repository name: `ATV-PaperBoard`
+   - Workflow filename: `pypi-publish.yml`
+   - Environment name: `pypi`
+3. On GitHub, create the `pypi` environment under repo Settings → Environments. Optionally add required reviewers — protected environments add a manual-approval gate to every publish, which is recommended for production releases.
+
+### Per-release flow
+
+- [ ] `git tag -a v<version> -m "v<version>"` — annotated tag on the release commit
+- [ ] `git push origin v<version>` — this triggers `.github/workflows/pypi-publish.yml`
+- [ ] Watch the Actions tab: the workflow checks tag↔pyproject version parity, builds, and publishes to PyPI
+- [ ] Confirm at `https://pypi.org/project/atv-paperboard/<version>/`
 - [ ] Create a fresh venv: `python -m venv /tmp/pypi-venv && source /tmp/pypi-venv/bin/activate`
 - [ ] `pip install atv-paperboard==<version>` — installs from real PyPI without errors
-- [ ] `paperboard doctor` — exits 0
+- [ ] `paperboard render --input examples/inputs/build-status.json --no-open --output-dir /tmp/pb-smoke` — render works end-to-end
 - [ ] Deactivate and delete the venv
+
+> **If the workflow fails on the version-parity step**: the tag and `pyproject.toml` `version` don't match. Either fix `pyproject.toml` and re-tag, or delete the tag and retag on the correct commit.
 
 ---
 
 ## Tag and release
 
-- [ ] `git tag -a v<version> -m "v<version>"` — annotated tag on the release commit
-- [ ] `git push origin v<version>`
+The tag push above already triggers PyPI publish. This section just covers the GitHub Release notes.
+
 - [ ] Determine release type:
   - Version has `-rc`, `-preview`, `-alpha`, or `-beta` suffix → `gh release create v<version> --prerelease --notes-file <(...))`
   - Stable version (no suffix) → `gh release create v<version> --notes-file <(...)`
