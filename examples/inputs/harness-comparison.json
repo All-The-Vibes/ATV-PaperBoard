@@ -1,6 +1,6 @@
 {
-  "title": "Harness Comparison: Claude Code vs Codex CLI vs OpenCode vs Copilot",
-  "subtitle": "atv-paperboard v0.1.0-preview integration matrix",
+  "title": "Harness Comparison",
+  "subtitle": "Claude Code vs Codex CLI vs OpenCode vs Copilot — atv-paperboard v0.1.0-preview integration matrix",
   "rows": [
     {"feature": "Native plugin manifest", "claude_code": "Yes (plugin.json)", "codex": "Yes (openai.yaml)", "opencode": "Yes (TS factory)", "copilot": "No (recipe only)"},
     {"feature": "Persistence env var", "claude_code": "CLAUDE_PLUGIN_DATA", "codex": "filesystem only", "opencode": "OPENCODE_CONFIG_DIR", "copilot": "workspace ./paperboard-artifacts/"},

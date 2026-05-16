@@ -1,6 +1,6 @@
 {
-  "title": "Phase 7a Bug Hunt — Real-World Test Pass",
-  "subtitle": "Bugs found by driving the actual CLI on real inputs",
+  "title": "Bug Hunt",
+  "subtitle": "Phase 7a real-world test pass — bugs found by driving the actual CLI on real inputs",
   "rows": [
     {"bug_id": "RW-1", "severity": "HIGH", "where": "core/cli.py main()", "symptom": "UnicodeEncodeError on Windows cp1252 console for ✓ ✗ — glyphs", "fix": "sys.stdout.reconfigure(encoding='utf-8', errors='replace') early in main()", "status": "FIXED"},
     {"bug_id": "RW-2", "severity": "MEDIUM", "where": "core/cli.py _cmd_doctor", "symptom": "Treated bridge.lint() return as findings list (was {findings, summary} dict); also lumped info-level findings as failures", "fix": "Extract .get('findings', []) and split by severity (error/warning blocking, info informational)", "status": "FIXED"},
