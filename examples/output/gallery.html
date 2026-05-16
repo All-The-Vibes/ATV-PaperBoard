@@ -1,231 +1,584 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="atv">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Paperboard Gallery</title>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-  />
-  <style>
-    /* ── Token overrides injected by atv-paperboard gallery layer ── */
-    :root {
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>atv-paperboard · gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090a;
+    --surface: #0e0f12;
+    --surface-2: #14151a;
+    --line: rgba(255,255,255,0.06);
+    --line-strong: rgba(255,255,255,0.14);
+    --text-1: #f7f8f8;
+    --text-2: #d0d6e0;
+    --text-3: #8a8f98;
+    --text-4: #62666d;
+    --accent: #7170ff;
+    --accent-line: rgba(113,112,255,0.32);
+    --amber: #f1b13b;
+    --amber-soft: rgba(241,177,59,0.10);
+    --amber-line: rgba(241,177,59,0.42);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
 
-      --pico-primary: #1a1a1a;
+    --pico-primary: #7170ff;
 
-      --pico-secondary: #3b82f6;
+    --pico-secondary: #5e6ad2;
 
-      --pico-contrast: #f59e0b;
+    --pico-contrast: #f1b13b;
 
-      --pico-background-color: #fafafa;
+    --pico-background-color: #08090a;
 
-      --color-surface: #ffffff;
+    --color-surface: #0e0f12;
 
-      --pico-border-color: #e2e8f0;
+    --pico-border-color: #1a1b21;
 
-      --pico-color: #0f172a;
+    --pico-color: #f7f8f8;
 
-      --pico-muted-color: #64748b;
+    --pico-muted-color: #8a8f98;
 
-      --color-danger: #ef4444;
+    --color-danger: #c97070;
 
-      --color-success: #22c55e;
+    --color-success: #7fae6e;
 
-      --pico-font-family: system-ui, -apple-system, sans-serif;
+    --pico-font-family: Inter, Geist, -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, sans-serif;
 
-      --font-family-heading: system-ui, -apple-system, sans-serif;
+    --font-family-heading: Inter, Geist, -apple-system, sans-serif;
 
-      --font-family-mono: ui-monospace, SFMono-Regular, monospace;
+    --font-family-mono: Geist Mono, JetBrains Mono, SF Mono, Menlo, Consolas, monospace;
 
-      --pico-font-size: 16px;
+    --pico-font-size: 15px;
 
-      --font-size-heading: 24px;
+    --font-size-heading: 28px;
 
-      --font-size-mono: 14px;
+    --font-size-mono: 13px;
 
+  }
+
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-feature-settings: "cv01", "ss03", "ss01";
+    color: var(--text-1);
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: auto;
+  }
+
+  .display, h1, h2 { text-rendering: optimizeLegibility; }
+  .mono { font-family: var(--font-mono); font-feature-settings: "tnum", "ss01"; }
+
+  a {
+    color: var(--text-1);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-strong);
+    transition: border-color 180ms var(--ease), opacity 180ms var(--ease);
+  }
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  a:active { opacity: 0.7; transition-duration: 60ms; }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background: rgba(255,255,255,0.04);
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+  }
+
+  /* Topbar — mirrors atv-tier.html.j2 */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    height: 52px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background: rgba(8,9,10,0.78);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center;
+    padding: 0 32px;
+    font-size: 13px;
+  }
+  .topbar .brand {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 510; letter-spacing: -0.01em; color: var(--text-1);
+  }
+  .topbar .brand .glyph {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--accent), #5e6ad2);
+  }
+  .topbar .spacer { flex: 1; }
+  .topbar .tag {
+    color: var(--text-3); font-size: 11.5px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 10px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .topbar .tag::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--amber); box-shadow: 0 0 8px rgba(241,177,59,0.55);
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+  /* Hero */
+  .hero { padding: 56px 0 48px; }
+  .hero .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--text-3); font-family: var(--font-mono);
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 28px;
+  }
+  .hero .eyebrow .bar {
+    width: 28px; height: 1px;
+    background: linear-gradient(90deg, var(--amber), transparent);
+  }
+  .hero h1 {
+    margin: 0 0 20px;
+    font-family: var(--font-display);
+    font-size: clamp(44px, 6vw, 72px);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+    color: var(--text-1);
+    max-width: 18ch;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--amber);
+  }
+  .hero .sub {
+    color: var(--text-2); font-size: 18px; line-height: 1.55;
+    max-width: 48ch; margin: 0 0 32px;
+  }
+  .hero-meta {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .hero-meta .item { display: inline-flex; gap: 10px; align-items: baseline; }
+  .hero-meta .item .v {
+    color: var(--text-1); font-size: 13px;
+    letter-spacing: 0; text-transform: none; font-weight: 510;
+  }
+
+  /* Card grid */
+  .grid-section { padding: 24px 0 48px; }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 200ms var(--ease), transform 120ms ease-out;
+  }
+  .card:active { transform: scale(0.997); transition: transform 120ms ease-out; }
+
+  .card-title {
+    font-family: var(--font-body);
+    font-weight: 510;
+    font-size: 16px;
+    color: var(--text-1);
+    margin: 0;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+  }
+  .card-meta .sep { color: var(--text-4); }
+
+  .tier-badge {
+    display: inline-block;
+    border: 1px solid var(--amber-line);
+    color: var(--amber);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    line-height: 1.4;
+    background: var(--amber-soft);
+  }
+
+  .card-row {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-row .sep { color: var(--text-4); }
+  .card-row .v { color: var(--text-2); text-transform: none; letter-spacing: 0; }
+
+  .card-link {
+    margin-top: 4px;
+    align-self: flex-start;
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 510;
+    letter-spacing: -0.005em;
+    border-bottom: 1px solid var(--accent-line);
+    padding-bottom: 2px;
+    transition: border-color 180ms var(--ease), opacity 180ms var(--ease);
+  }
+  .card-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  .card-link:active { opacity: 0.7; transition-duration: 60ms; }
+
+  .card-missing {
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-4);
+  }
+
+  /* Empty state */
+  .empty {
+    padding: 64px 0;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .empty code {
+    background: var(--amber-soft);
+    border: 1px solid var(--amber-line);
+    color: var(--amber);
+  }
+
+  /* Footer */
+  .foot {
+    border-top: 1px solid var(--line);
+    padding: 32px 0 40px;
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+  .foot .row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .foot strong { color: var(--text-2); font-weight: 510; }
+  .foot .right {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-4);
+  }
+  .foot .right code {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-3);
+  }
+
+  /* Hover effects — pointer devices only */
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      border-color: var(--line-strong);
+      transition: border-color 200ms var(--ease);
     }
+    a:hover { border-color: var(--accent); }
+    .card-link:hover { border-color: var(--accent); }
+  }
 
-    body {
-      padding: 0;
-      margin: 0;
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
-
-    .pb-gallery-wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
-    }
-
-    .pb-gallery-header {
-      border-bottom: 2px solid var(--pico-primary, #1A1A1A);
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-    }
-
-    .pb-gallery-header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--pico-primary, #1A1A1A);
-      margin: 0 0 0.25rem;
-    }
-
-    .pb-gallery-meta {
-      font-size: 0.8rem;
-      color: var(--pico-muted-color, #64748B);
-    }
-
-    .pb-card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .pb-card {
-      border: 2px solid var(--pico-primary, #1A1A1A);
-      border-radius: 4px;
-      padding: 1rem;
-      background: var(--pico-background-color, #FAFAFA);
-      transition: border-color 0.15s;
-    }
-
-    .pb-card:hover {
-      border-color: var(--pico-contrast, #3B82F6);
-    }
-
-    .pb-card-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--pico-primary, #1A1A1A);
-      margin: 0 0 0.5rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pb-card-row {
-      font-size: 0.75rem;
-      color: var(--pico-muted-color, #64748B);
-      margin: 0.15rem 0;
-    }
-
-    .pb-badge {
-      display: inline-block;
-      padding: 0.1rem 0.4rem;
-      border-radius: 2px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      background: var(--pico-contrast, #F59E0B);
-      color: var(--pico-primary, #1A1A1A);
-      margin-left: 0.25rem;
-    }
-
-    .pb-card-link {
-      display: inline-block;
-      margin-top: 0.75rem;
-      font-size: 0.8rem;
-      color: var(--pico-contrast, #3B82F6);
-      text-decoration: underline;
-    }
-
-    .pb-empty {
-      padding: 3rem 0;
-      text-align: center;
-      color: var(--pico-muted-color, #64748B);
-    }
-
-    .pb-footer {
-      margin-top: 3rem;
-      padding: 1rem 0;
-      border-top: 1px solid var(--pico-muted-border-color, #E2E8F0);
-      font-size: 0.75rem;
-      color: var(--pico-muted-color, #64748B);
-      text-align: center;
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <div class="pb-gallery-wrap">
-    <header class="pb-gallery-header">
-      <h1>Paperboard Gallery</h1>
-      <p class="pb-gallery-meta">
-        3 artifacts &mdash; generated 2026-05-16 19:16 UTC
-      </p>
-    </header>
 
+<div class="topbar">
+  <span class="brand"><span class="glyph"></span>atv-paperboard</span>
+  <span class="spacer"></span>
+  <span class="tag">INDEX · 7 ARTIFACTS</span>
+</div>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="eyebrow"><span class="bar"></span>GALLERY</div>
+    <h1 class="display">Rendered <em>artifacts</em></h1>
+    <p class="sub">
+      7 documents generated by atv-paperboard. Click any card to open.
+    </p>
+    <div class="hero-meta">
+      <span class="item">TOTAL <span class="v">7</span></span>
+      <span class="item">UPDATED <span class="v">2026-05-16 21:20 UTC</span></span>
+    </div>
+  </section>
+
+  <section class="grid-section">
     
-    <div class="pb-card-grid">
+    <div class="card-grid">
       
-      <article class="pb-card">
-        <h2 class="pb-card-title" title="Harness Comparison">Harness Comparison</h2>
-        <p class="pb-card-row">
-          <strong>Harness:</strong> codex
-          <span class="pb-badge">atv</span>
+      <article class="card">
+        <h2 class="card-title" title="Harness Comparison 9B31F7">Harness Comparison 9B31F7</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
         </p>
         
-        <p class="pb-card-row">
-          <strong>Design:</strong> C:\Users\shyamsridhar\code\atv-paperb...
+
+        
+        <p class="card-row" title="2026-05-16T21:18:41.473290+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T21:18:41.47...</span>
         </p>
         
+
         
-        <p class="pb-card-row">
-          <strong>Created:</strong> 2026-05-16T19:16:50.12...
-        </p>
-        
-        
-        <a class="pb-card-link" href="harness-comparison.html">Open artifact &rarr;</a>
+        <a class="card-link" href="harness-comparison-9b31f7.html">Open artifact &rarr;</a>
         
       </article>
       
-      <article class="pb-card">
-        <h2 class="pb-card-title" title="Bug Hunt">Bug Hunt</h2>
-        <p class="pb-card-row">
-          <strong>Harness:</strong> codex
-          <span class="pb-badge">atv</span>
+      <article class="card">
+        <h2 class="card-title" title="Build Status 8A05F2">Build Status 8A05F2</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
         </p>
         
-        <p class="pb-card-row">
-          <strong>Design:</strong> C:\Users\shyamsridhar\code\atv-paperb...
+
+        
+        <p class="card-row" title="2026-05-16T21:18:40.426232+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T21:18:40.42...</span>
         </p>
         
+
         
-        <p class="pb-card-row">
-          <strong>Created:</strong> 2026-05-16T18:53:23.64...
-        </p>
-        
-        
-        <a class="pb-card-link" href="bug-hunt.html">Open artifact &rarr;</a>
+        <a class="card-link" href="build-status-8a05f2.html">Open artifact &rarr;</a>
         
       </article>
       
-      <article class="pb-card">
-        <h2 class="pb-card-title" title="Build Status">Build Status</h2>
-        <p class="pb-card-row">
-          <strong>Harness:</strong> codex
-          <span class="pb-badge">atv</span>
+      <article class="card">
+        <h2 class="card-title" title="Bug Hunt 9B6F6C">Bug Hunt 9B6F6C</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
         </p>
         
-        <p class="pb-card-row">
-          <strong>Design:</strong> C:\Users\shyamsridhar\code\atv-paperb...
+
+        
+        <p class="card-row" title="2026-05-16T21:18:39.271687+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T21:18:39.27...</span>
         </p>
         
+
         
-        <p class="pb-card-row">
-          <strong>Created:</strong> 2026-05-16T18:53:22.31...
+        <a class="card-link" href="bug-hunt-9b6f6c.html">Open artifact &rarr;</a>
+        
+      </article>
+      
+      <article class="card">
+        <h2 class="card-title" title="Atv Paperboard V0 2 0 Render Pipeline Report">Atv Paperboard V0 2 0 Render Pipeline Report</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
         </p>
         
+
         
-        <a class="pb-card-link" href="build-status.html">Open artifact &rarr;</a>
+        <p class="card-row" title="2026-05-16T21:18:37.889690+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T21:18:37.88...</span>
+        </p>
+        
+
+        
+        <a class="card-link" href="atv-paperboard-v0-2-0-render-pipeline-report.html">Open artifact &rarr;</a>
+        
+      </article>
+      
+      <article class="card">
+        <h2 class="card-title" title="Harness Comparison">Harness Comparison</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
+        </p>
+        
+
+        
+        <p class="card-row" title="2026-05-16T19:16:50.127462+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T19:16:50.12...</span>
+        </p>
+        
+
+        
+        <a class="card-link" href="harness-comparison.html">Open artifact &rarr;</a>
+        
+      </article>
+      
+      <article class="card">
+        <h2 class="card-title" title="Bug Hunt">Bug Hunt</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
+        </p>
+        
+
+        
+        <p class="card-row" title="2026-05-16T18:53:23.644815+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T18:53:23.64...</span>
+        </p>
+        
+
+        
+        <a class="card-link" href="bug-hunt.html">Open artifact &rarr;</a>
+        
+      </article>
+      
+      <article class="card">
+        <h2 class="card-title" title="Build Status">Build Status</h2>
+
+        <div class="card-meta">
+          <span>HARNESS</span>
+          <span class="sep">·</span>
+          <span class="v" style="text-transform:none;letter-spacing:0;color:var(--text-2);">codex</span>
+          <span class="sep">·</span>
+          <span class="tier-badge">atv</span>
+        </div>
+
+        
+        <p class="card-row" title="C:\Users\shyamsridhar\code\atv-paperboard\core\designs\paperboard.DESIGN.md">
+          <span>DESIGN</span> <span class="sep">·</span> <span class="v">C:\Users\shyamsridhar\code\atv-paperb...</span>
+        </p>
+        
+
+        
+        <p class="card-row" title="2026-05-16T18:53:22.316479+00:00">
+          <span>CREATED</span> <span class="sep">·</span> <span class="v">2026-05-16T18:53:22.31...</span>
+        </p>
+        
+
+        
+        <a class="card-link" href="build-status.html">Open artifact &rarr;</a>
         
       </article>
       
     </div>
     
+  </section>
 
-    <footer class="pb-footer">
-      Generated by <strong>atv-paperboard</strong> COMPOUND pillar
-    </footer>
-  </div>
+  <footer class="foot">
+    <div class="row">
+      <span>Generated by <strong>atv-paperboard</strong>.</span>
+      <span class="right">UPDATED · <code>2026-05-16 21:20 UTC</code></span>
+    </div>
+  </footer>
+
+</div>
+
 </body>
 </html>
