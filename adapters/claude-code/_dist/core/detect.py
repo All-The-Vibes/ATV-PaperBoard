@@ -20,7 +20,6 @@ _VALID_OVERRIDES = frozenset({
     "copilot-coding-agent",
     "copilot-ide",
     "codex",
-    "opencode",
     "standalone",
 })
 
@@ -29,7 +28,7 @@ def detect_harness() -> str:
     """Return the name of the current harness, or 'standalone'.
 
     Return values: 'claude-code' | 'copilot-cli' | 'copilot-coding-agent' |
-                   'opencode' | 'codex' | 'copilot-ide' | 'standalone'
+                   'codex' | 'copilot-ide' | 'standalone'
     """
     # Tier 0 — explicit override (e.g. injected by hooks.json env block).
     override = os.environ.get("PAPERBOARD_HARNESS", "").strip()
@@ -45,8 +44,6 @@ def detect_harness() -> str:
         return "copilot-coding-agent"
     if _has_copilot_cli_env():
         return "copilot-cli"
-    if "OPENCODE_CONFIG_DIR" in os.environ:
-        return "opencode"
     if "CODEX_HOME" in os.environ:
         return "codex"
 

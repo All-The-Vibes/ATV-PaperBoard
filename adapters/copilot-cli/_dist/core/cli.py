@@ -14,9 +14,11 @@ Every command resolves harness via detect.detect_harness() first.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # Force UTF-8 stdout/stderr on Windows so glyphs like ✓ ✗ — and other non-cp1252
@@ -368,18 +370,35 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
         node_ver = "not found"
     print(f"  node:             {node_ver}")
 
-    # @google/design.md version
+    # @google/design.md version — call the resolved binary directly so a
+    # global npm install is found just like the lint step finds it. Falling
+    # back to reading package.json fails for global installs because the
+    # repo-relative path isn't present.
+    bridge_ver: str | None = None
+    bridge_status: str = ""
     try:
-        pkg_json = Path(__file__).parent.parent / "node_modules" / "@google" / "design.md" / "package.json"
-        if pkg_json.exists():
-            import json as _json  # noqa: PLC0415
-            data = _json.loads(pkg_json.read_text())
-            bridge_ver = data.get("version", "unknown")
-        else:
-            bridge_ver = "not installed"
-    except Exception:
-        bridge_ver = "error reading"
+        from core import bridge as _bridge  # noqa: PLC0415
+
+        bridge_ver = _bridge.version()
+        in_range, msg = _bridge.bridge_compatibility(bridge_ver)
+        bridge_status = ("✓ " if in_range else "⚠ ") + msg
+    except Exception as exc:  # noqa: BLE001
+        # bridge missing or broken — doctor still has to print something.
+        bridge_ver = "not installed"
+        bridge_status = (
+            "fix: `npm install -g @google/design.md@"
+            f"{_bridge_expected_version()}`"
+        )
     print(f"  @google/design.md: {bridge_ver}")
+    if bridge_status:
+        print(f"                     {bridge_status}")
+
+    # Check for a newer compatible version on npm. Best-effort, 24h cached,
+    # network-tolerant — failures are silent. Doctor surfaces upgrades but
+    # never installs anything; the user controls when to bump.
+    upgrade = _check_npm_for_newer(bridge_ver if bridge_ver and bridge_ver != "not installed" else None)
+    if upgrade:
+        print(f"                     ↑ {upgrade} available — npm install -g @google/design.md@{upgrade}")
 
     persist_path = _resolve_artifact_dir(harness)
     print(f"  persistence path: {persist_path}")
@@ -413,7 +432,7 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
             if isinstance(exc, BridgeEnvError):
                 lint_status = (
                     "✗ bridge unavailable — Enforce pillar is silently degraded\n"
-                    "                              fix: `npm install -g @google/design.md@0.1.1`"
+                    f"                              fix: `npm install -g @google/design.md@{_bridge_expected_version()}`"
                 )
             else:
                 lint_status = f"✗ unexpected error: {type(exc).__name__}: {exc}"
@@ -422,6 +441,86 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
     print(f"  paperboard.DESIGN.md lint: {lint_status}")
 
     return 0
+
+
+def _bridge_expected_version() -> str:
+    """Return the bridge's expected version for remediation messages."""
+    try:
+        from core.bridge import EXPECTED_BRIDGE_VERSION  # noqa: PLC0415
+        return EXPECTED_BRIDGE_VERSION
+    except Exception:  # noqa: BLE001
+        return "0.1.1"
+
+
+def _check_npm_for_newer(installed: str | None) -> str | None:
+    """Probe npm for a newer compatible version of @google/design.md.
+
+    Best-effort, 24h cached in ``~/.atv-paperboard/upgrade-cache.json``,
+    network-tolerant. Returns the newer version string if one exists in the
+    tested compatibility range, else None. Failures (offline, DNS, 4xx, slow)
+    are silent — doctor must never block on network calls.
+    """
+    if not installed:
+        return None
+    try:
+        from core.bridge import (  # noqa: PLC0415
+            BRIDGE_VERSION_MAX_EXCL,
+            BRIDGE_VERSION_MIN,
+            _parse_semver,
+        )
+    except Exception:  # noqa: BLE001
+        return None
+
+    installed_parsed = _parse_semver(installed)
+    lo = _parse_semver(BRIDGE_VERSION_MIN)
+    hi = _parse_semver(BRIDGE_VERSION_MAX_EXCL)
+    if installed_parsed is None or lo is None or hi is None:
+        return None
+
+    cache_path = Path.home() / ".atv-paperboard" / "upgrade-cache.json"
+    now = int(time.time())
+    cached_latest: str | None = None
+    try:
+        if cache_path.exists():
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            if isinstance(cached, dict) and now - int(cached.get("checked_at", 0)) < 86400:
+                cached_latest = cached.get("latest")
+    except Exception:  # noqa: BLE001
+        cached_latest = None
+
+    latest: str | None = cached_latest
+    if not latest:
+        try:
+            import urllib.request  # noqa: PLC0415
+
+            req = urllib.request.Request(
+                "https://registry.npmjs.org/@google%2Fdesign.md/latest",
+                headers={"Accept": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:  # noqa: S310
+                payload = json.loads(resp.read().decode("utf-8"))
+            latest = payload.get("version") if isinstance(payload, dict) else None
+        except Exception:  # noqa: BLE001
+            return None
+        if latest:
+            try:
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                cache_path.write_text(
+                    json.dumps({"checked_at": now, "latest": latest}),
+                    encoding="utf-8",
+                )
+            except Exception:  # noqa: BLE001
+                pass
+
+    latest_parsed = _parse_semver(latest) if latest else None
+    if latest_parsed is None:
+        return None
+    if latest_parsed <= installed_parsed:
+        return None
+    if latest_parsed >= hi:
+        # Newer-but-untested; not an upgrade we suggest from `doctor`.
+        return None
+    return latest
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

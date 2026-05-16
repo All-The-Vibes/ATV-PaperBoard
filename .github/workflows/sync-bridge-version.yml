@@ -1,0 +1,82 @@
+name: Sync @google/design.md pins
+
+# When Dependabot bumps the @google/design.md version in package.json (the
+# bridge dependency), the README install snippets, the GH Actions workflow
+# template, and the per-adapter INSTALL.md prereqs need to match. This job
+# rewrites those pins in-place on Dependabot's branch so the bump PR carries
+# its own doc updates and CI sees the synchronized state before review.
+#
+# We deliberately do NOT widen the tested-range constants in core/bridge.py
+# here: that range represents what humans have verified, and humans bump it
+# manually when a new bridge version is empirically validated.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - package.json
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Extract @google/design.md version
+        id: ver
+        run: |
+          v=$(node -p "require('./package.json').dependencies['@google/design.md']" 2>/dev/null || true)
+          if [ -z "$v" ] || [ "$v" = "undefined" ]; then
+            echo "No @google/design.md dep found in package.json; nothing to sync."
+            echo "version=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Strip leading ^ / ~ / >= / = if present (Dependabot can pin exact, but be safe).
+          v="${v#^}"; v="${v#~}"; v="${v#>=}"; v="${v#=}"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Resolved @google/design.md version: $v"
+
+      - name: Replace pins in docs and templates
+        if: steps.ver.outputs.version != ''
+        run: |
+          v="${{ steps.ver.outputs.version }}"
+          files=(
+            "README.md"
+            "recipes/github-actions/workflow.yml.template"
+            "adapters/claude-code/INSTALL.md"
+            "adapters/copilot-cli/INSTALL.md"
+            "adapters/codex/INSTALL.md"
+          )
+          for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+              sed -i -E "s|@google/design\.md@[0-9]+\.[0-9]+\.[0-9]+|@google/design.md@$v|g" "$f"
+            fi
+          done
+
+      - name: Commit and push if changed
+        if: steps.ver.outputs.version != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "All doc pins already match package.json — nothing to commit."
+            exit 0
+          fi
+          git add -A
+          git commit -m "chore: sync @google/design.md pins to ${{ steps.ver.outputs.version }}
+
+Auto-generated to keep README, workflow template, and per-adapter
+INSTALL.md in step with the package.json bump in this PR.
+
+Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>"
+          git push origin HEAD:${{ github.head_ref }}

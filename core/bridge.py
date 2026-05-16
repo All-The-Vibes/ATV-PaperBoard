@@ -23,6 +23,57 @@ from typing import Any
 # "[log] 0.1.1" instead of "0.1.1".
 _CONSOLA_PREFIX_RE = re.compile(r"^\[(?:log|info|success|warn|debug|trace|ready|start|box)\]\s+")
 
+# Tested compatibility range for @google/design.md. The bridge is happy to
+# *call* any version, but `paperboard doctor` warns if the resolved version is
+# outside this range so users know they're running an unverified combination.
+# Bump these when a new bridge version is empirically validated; see
+# CHANGELOG.md "Migration plan when @google/design.md 0.2 ships".
+EXPECTED_BRIDGE_VERSION = "0.1.1"
+BRIDGE_VERSION_MIN = "0.1.1"
+BRIDGE_VERSION_MAX_EXCL = "0.2.0"
+
+
+def _parse_semver(s: str) -> tuple[int, int, int] | None:
+    """Parse a 'MAJOR.MINOR.PATCH' string (ignoring any -prerelease/+build) into a tuple.
+
+    Returns None if *s* doesn't parse cleanly. Tolerates the consola "[log] "
+    prefix already stripped by `version()`.
+    """
+    s = s.strip().lstrip("v").split("-", 1)[0].split("+", 1)[0]
+    parts = s.split(".")
+    if len(parts) < 3:
+        return None
+    try:
+        return int(parts[0]), int(parts[1]), int(parts[2])
+    except ValueError:
+        return None
+
+
+def bridge_compatibility(installed: str) -> tuple[bool, str]:
+    """Compare *installed* version against the tested compatibility range.
+
+    Returns ``(ok, message)`` — ``ok=True`` means in-range, ``message`` is a
+    human-readable status string for ``paperboard doctor`` to print.
+    """
+    parsed = _parse_semver(installed)
+    if parsed is None:
+        return False, f"could not parse version {installed!r}"
+    lo = _parse_semver(BRIDGE_VERSION_MIN)
+    hi = _parse_semver(BRIDGE_VERSION_MAX_EXCL)
+    if lo is None or hi is None:  # pragma: no cover — module constants
+        return False, "internal: bad range constants"
+    if parsed < lo:
+        return False, (
+            f"below tested range (>={BRIDGE_VERSION_MIN},<{BRIDGE_VERSION_MAX_EXCL}); "
+            f"fix: npm install -g @google/design.md@{EXPECTED_BRIDGE_VERSION}"
+        )
+    if parsed >= hi:
+        return False, (
+            f"above tested range (>={BRIDGE_VERSION_MIN},<{BRIDGE_VERSION_MAX_EXCL}); "
+            f"untested, may break — pin with `npm install -g @google/design.md@{EXPECTED_BRIDGE_VERSION}`"
+        )
+    return True, f"in tested range (>={BRIDGE_VERSION_MIN},<{BRIDGE_VERSION_MAX_EXCL})"
+
 # ---------------------------------------------------------------------------
 # Errors
 # ---------------------------------------------------------------------------

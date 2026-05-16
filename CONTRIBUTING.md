@@ -155,7 +155,7 @@ CI runs both `ruff check` and `pytest`. PRs that fail either will be flagged.
 ## Branching and PRs
 
 - **Default branch:** `main`. Releases are tagged from `main` (`v0.1.0-preview`, `v0.1.1`, …).
-- **Feature branches:** `feat/<short-slug>` (e.g., `feat/opencode-adapter`).
+- **Feature branches:** `feat/<short-slug>` (e.g., `feat/copilot-ide-adapter`).
 - **Bug-fix branches:** `fix/<short-slug>` (e.g., `fix/tailwind-flatten-envelope`).
 - **Doc-only branches:** `docs/<short-slug>`.
 

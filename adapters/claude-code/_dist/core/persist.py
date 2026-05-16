@@ -26,13 +26,6 @@ def artifact_dir(harness: str) -> Path:
         return Path(data)
     if harness == "codex":
         return Path.home() / ".codex" / "atv-paperboard-artifacts"
-    if harness == "opencode":
-        cfg = os.environ.get("OPENCODE_CONFIG_DIR")
-        if not cfg:
-            raise RuntimeError(
-                "OPENCODE_CONFIG_DIR not set; cannot resolve OpenCode artifact dir."
-            )
-        return Path(cfg) / "atv-paperboard-artifacts"
     if harness == "copilot-cli":
         # Per SPEC addendum 2026-05-16 §5.4 — user-scoped, survives plugin
         # upgrades. ${COPILOT_HOME:-$HOME/.copilot}/plugin-data/atv-paperboard/artifacts

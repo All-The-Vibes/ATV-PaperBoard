@@ -254,7 +254,7 @@ class TestHarnessDetection:
         from core.detect import detect_harness
 
         for var in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA",
-                    "GITHUB_ACTIONS", "OPENCODE_CONFIG_DIR", "CODEX_HOME",
+                    "GITHUB_ACTIONS", "CODEX_HOME",
                     "COPILOT_HOME", "COPILOT_AGENT", "COPILOT_CLI_VERSION"):
             monkeypatch.delenv(var, raising=False)
         monkeypatch.setenv("PAPERBOARD_HARNESS", "copilot-cli")
@@ -267,7 +267,7 @@ class TestHarnessDetection:
         from core.detect import detect_harness
 
         for var in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA",
-                    "GITHUB_ACTIONS", "OPENCODE_CONFIG_DIR", "CODEX_HOME",
+                    "GITHUB_ACTIONS", "CODEX_HOME",
                     "COPILOT_HOME", "COPILOT_AGENT", "COPILOT_CLI_VERSION"):
             monkeypatch.delenv(var, raising=False)
         monkeypatch.setenv("PAPERBOARD_HARNESS", "not-a-real-harness")
@@ -279,7 +279,7 @@ class TestHarnessDetection:
         from core.detect import detect_harness
 
         for var in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA",
-                    "GITHUB_ACTIONS", "OPENCODE_CONFIG_DIR", "CODEX_HOME",
+                    "GITHUB_ACTIONS", "CODEX_HOME",
                     "PAPERBOARD_HARNESS", "COPILOT_AGENT", "COPILOT_CLI_VERSION"):
             monkeypatch.delenv(var, raising=False)
         monkeypatch.setenv("COPILOT_HOME", str(tmp_path))
@@ -290,7 +290,7 @@ class TestHarnessDetection:
         from core.detect import detect_harness
 
         for var in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA",
-                    "OPENCODE_CONFIG_DIR", "CODEX_HOME", "PAPERBOARD_HARNESS"):
+                    "CODEX_HOME", "PAPERBOARD_HARNESS"):
             monkeypatch.delenv(var, raising=False)
         monkeypatch.setenv("GITHUB_ACTIONS", "true")
         monkeypatch.setenv("COPILOT_HOME", str(tmp_path))
@@ -301,7 +301,7 @@ class TestHarnessDetection:
         from core.detect import detect_harness
 
         for var in ("CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA",
-                    "GITHUB_ACTIONS", "OPENCODE_CONFIG_DIR", "CODEX_HOME",
+                    "GITHUB_ACTIONS", "CODEX_HOME",
                     "PAPERBOARD_HARNESS", "COPILOT_AGENT", "COPILOT_CLI_VERSION",
                     "VSCODE_PID", "TERM_PROGRAM"):
             monkeypatch.delenv(var, raising=False)

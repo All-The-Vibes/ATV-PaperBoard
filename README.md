@@ -45,7 +45,6 @@ It's the same toolkit, the same contract, the same `core/` Python package — wi
 | **Codex CLI** | Native plugin (`adapters/codex/`) | ✅ Shipping |
 | **GitHub Copilot CLI** | Native plugin (`adapters/copilot-cli/`) | ✅ Shipping — validated end-to-end against `copilot.exe v1.0.49` in an isolated sandbox |
 | **GitHub Copilot Coding Agent** | GitHub Actions recipe (`recipes/github-actions/`) | ✅ Shipping |
-| OpenCode | Native plugin | 🚧 Deferred to v0.1.2 (TS plugin model has 5 breaking upstream defects that need an empirical-verification cycle) |
 
 > The Copilot CLI integration was validated against the real binary inside a fully isolated sandbox (`USERPROFILE`/`HOME`/`COPILOT_HOME` pinned). Hook fires, payload parses, suggestion injects, file lands, `exit=0`.
 
@@ -188,7 +187,6 @@ The CLI resolves which harness it's running inside via a strict precedence ladde
 | 1 | `CLAUDE_PLUGIN_ROOT` or `CLAUDE_PLUGIN_DATA` in env | `claude-code` |
 | 1 | `GITHUB_ACTIONS=true` | `copilot-coding-agent` |
 | 1 | `COPILOT_HOME` in env, or `~/.copilot/installed-plugins/atv-paperboard/` exists | `copilot-cli` |
-| 1 | `OPENCODE_CONFIG_DIR` in env | `opencode` *(reserved for v0.1.2)* |
 | 1 | `CODEX_HOME` in env | `codex` |
 | 2 | `~/.codex/config.toml` exists | `codex` |
 | 3 | `VSCODE_PID` AND `TERM_PROGRAM=vscode` | `copilot-ide` *(reserved for v0.2)* |
@@ -206,7 +204,6 @@ The IDE-pairing tier requires **both** signals to avoid false positives from ter
 | Codex CLI | `~/.codex/atv-paperboard-artifacts/<date>/` — user-scoped (Codex has no `CODEX_PLUGIN_DATA` analogue) |
 | Copilot CLI | `${COPILOT_HOME:-~/.copilot}/plugin-data/atv-paperboard/artifacts/` — user-scoped |
 | Copilot Coding Agent | `${repo}/paperboard-artifacts/<date>/` — workspace-scoped (PR-attached) |
-| OpenCode | `${OPENCODE_CONFIG_DIR}/atv-paperboard-artifacts/` — *reserved for v0.1.2* |
 | Standalone | `$(pwd)/paperboard-artifacts/` |
 
 `--output-dir` overrides this for every subcommand.
@@ -253,12 +250,12 @@ The Copilot CLI adapter is a native plugin: a directory laid out as `agents/`, `
 
 Explicit non-goals so you know what to expect:
 
-- **Cross-harness artifact aggregation.** Each harness maintains its own gallery from its own persistence root. One unified gallery showing artifacts from multiple harnesses on one machine is v0.1.2 work.
+- **Cross-harness artifact aggregation.** Each harness maintains its own gallery from its own persistence root. One unified gallery showing artifacts from multiple harnesses on one machine is a v0.1.x follow-up.
 - **VS Code Chat Participant extension.** The in-IDE Copilot path. Complex, low marginal value over the instructions+CLI pattern. Deferred to v0.2.
 - **MCP server integration.** Any harness. Deferred to v0.2.
 - **Live-reload via WebSocket.** Artifacts are static HTML by design.
 - **Full HTML-side token trace.** v0.1.x is **color-only**; spacing/typography/shadow lint is v0.2.
-- **Plugin auto-update, telemetry, Anthropic Artifacts API adapter.** None.
+- **Silent plugin auto-update, telemetry, Anthropic Artifacts API adapter.** None. `paperboard doctor` surfaces available `@google/design.md` upgrades (24 h-cached, network-tolerant) and warns when the resolved bridge version drifts outside the tested compatibility range, but never installs anything — you control when to bump.
 
 ### Threat model & mitigations
 
@@ -266,7 +263,7 @@ The contract is hostile to a few specific failure modes:
 
 | Threat | Mitigation |
 |---|---|
-| `@google/design.md` schema drift (it's alpha, pinned to 0.1.1) | `tests/test_core_bridge.py` is the drift guard; if it fails post-bump, do not auto-upgrade |
+| `@google/design.md` schema drift (it's alpha, pinned to 0.1.1) | `tests/test_core_bridge.py` is the drift guard; `paperboard doctor` warns when the resolved version falls outside `BRIDGE_VERSION_MIN`/`BRIDGE_VERSION_MAX_EXCL` in `core/bridge.py`; Dependabot opens a PR on minor/patch bumps and the `sync-bridge-version` workflow rewrites the install pins on the same PR so docs and `package.json` never drift apart. |
 | `npx` zero-byte stdout on Windows | Replaced with node-direct: `node <bin>/dist/index.js ...` |
 | Auto-detect false negatives (Codex lacks a stable session env var) | Tier-2 filesystem heuristic + "standalone" final fallback |
 | Cross-harness state divergence | Each harness has its own persistence path; v0.1.x makes this explicit (no aggregation) |
@@ -342,7 +339,7 @@ Every command resolves the harness via `detect_harness()` first, then routes to 
 ## Roadmap
 
 - [CHANGELOG.md](CHANGELOG.md) — version history
-- **v0.1.2** — OpenCode adapter (5 SPEC-level TS plugin defects need empirical-verification cycle), USPTO TESS clearance on "paperboard" / "atv", PyPI publish, Claude Code marketplace PR, cross-harness gallery aggregation
+- **v0.1.x** — Cross-harness gallery aggregation, additional render tiers, expanded design starters
 - **v0.2** — VS Code Chat Participant (Copilot in-IDE path), MCP server integration, full HTML-side token trace (spacing/typography/shadow)
 
 ## License

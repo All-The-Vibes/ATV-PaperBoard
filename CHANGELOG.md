@@ -10,20 +10,30 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+### Added
+- **`paperboard doctor` now version-checks the bridge.** Reports `✓ in tested range` / `⚠ above tested range` / `⚠ below tested range` based on `BRIDGE_VERSION_MIN` and `BRIDGE_VERSION_MAX_EXCL` in `core/bridge.py`. The compatibility-range constants represent what humans have verified; they're bumped manually when a new bridge version passes the test suite.
+- **`paperboard doctor` surfaces available `@google/design.md` upgrades** by polling the npm registry (3 s timeout, 24 h cached in `~/.atv-paperboard/upgrade-cache.json`, fully network-tolerant). Offline / DNS / 4xx failures are silent. Doctor only suggests upgrades that fall inside the tested compatibility range; never installs anything. Updates the README non-goals accordingly — *silent* auto-update remains a non-goal, but the doctor row makes available bumps visible without surprising the user.
+- **`.github/workflows/sync-bridge-version.yml`** rewrites the `@google/design.md@X.Y.Z` pin in `README.md`, `recipes/github-actions/workflow.yml.template`, and the three per-adapter `INSTALL.md` files whenever Dependabot opens a `package.json` bump PR — so the bump carries its own doc updates and CI sees the synchronized state before review. The tested-range constants in `core/bridge.py` are *not* auto-widened; humans bump those after verification.
+
+### Removed
+- **OpenCode adapter scaffolding.** The `opencode` harness branch in `core/detect.py` and `core/persist.py`, the `OPENCODE_CONFIG_DIR` env-var probe, the `opencode` row in the README's auto-detection ladder and persistence-paths table, the `opencode` test cases in `tests/phase0/test_v3_v4_v5_v6.py`, the `OPENCODE_CONFIG_DIR` references in `tests/test_adapter_copilot_cli.py`, the `opencode` column in `examples/inputs/harness-comparison.json`, and the OpenCode roadmap line are all gone. The TS plugin model had upstream issues that made an empirical-verification cycle infeasible for the v0.1.x line; removing the placeholder is cleaner than continuing to advertise a deferred adapter.
+
 ### Fixed
 - **`paperboard doctor` no longer crashes when `@google/design.md` is missing.** Previously hit an unhandled `BridgeEnvError` traceback at the lint step; now catches the error and reports `✗ bridge unavailable — Enforce pillar is silently degraded` with a copy-pasteable `npm install -g @google/design.md@0.1.1` remediation line.
 - **Bridge resolves `@google/design.md` from a global npm install.** `core/bridge.py::_resolve_binary` now queries `npm root -g` (with a 10 s timeout and graceful failure) in addition to the existing local `node_modules/` candidates, so a `pip install atv-paperboard` + `npm install -g @google/design.md@0.1.1` flow works from any cwd without cloning the repo.
+- **Doctor reads the bridge version from the resolved binary** (`bridge.version()`) instead of a hardcoded `node_modules/@google/design.md/package.json` path, so a global npm install correctly reports its version instead of showing `not installed`.
 
 ### Changed
 - **Default tier is now `atv`** (the dark designed-document template that properly showcases the neubrutalism palette). Previously the `paperboard render` CLI silently fell back to `pico` even though every SKILL.md, the Copilot Coding Agent instructions template, and the GH Actions recipe all promised `atv` as the default. Now the docs match reality: omitting `--tier` produces the rich dark artifact every harness's SKILL.md describes. Pass `--tier pico` or `--tier daisy` explicitly for the light, framework-styled tiers.
-- Regenerated `examples/output/` (`build-status`, `bug-hunt`, `harness-comparison`, `gallery`) against the new default so the README's "What you get" links show neubrutalism in its canonical atv presentation.
+- Regenerated `examples/output/` (`build-status`, `bug-hunt`, `harness-comparison`, `gallery`) against the new default so the README's "What you get" links show neubrutalism in its canonical atv presentation. `harness-comparison.json` rewritten to drop the OpenCode column and replace it with a Copilot CLI / Copilot Coding Agent split.
 
 ### Documentation
 - **README install section rewritten** with an explicit prerequisites table (Python 3.10+, Node.js 18+, `npm install -g @google/design.md@0.1.1`, `pip install atv-paperboard`) and a `paperboard doctor` verify step in every harness's install block. Quick start no longer requires a repo clone.
 - **Per-adapter `INSTALL.md` files** (`adapters/{claude-code,copilot-cli,codex}/INSTALL.md`) now have consistent Node.js + `@google/design.md` prerequisites. Previously the Claude Code and Codex INSTALL.md files didn't mention Node at all; Copilot CLI mentioned Node but had no install command for the lint binary.
+- **README threat-model row** for `@google/design.md` schema drift now references `BRIDGE_VERSION_MIN`/`BRIDGE_VERSION_MAX_EXCL` and the sync-pins workflow.
 
 ### Tests
-- Removed two permanently-skipped V3/V4 placeholder stubs from `tests/phase0/test_v3_v4_v5_v6.py` (`harness_claude_code` and `harness_codex` markers were hardcoded to skip and the function bodies were `...` — they asserted nothing). The original Phase-0 V3 (Claude Code hook propagates `CLAUDE_PLUGIN_DATA`) and V4 (Codex `PostToolUse` fires on Write) were validated manually against real harness sessions and remain documented under the 0.1.2 release notes. Baseline is now **130 passed, 0 skipped**.
+- Removed two permanently-skipped V3/V4 placeholder stubs from `tests/phase0/test_v3_v4_v5_v6.py` (`harness_claude_code` and `harness_codex` markers were hardcoded to skip and the function bodies were `...` — they asserted nothing). The original Phase-0 V3 (Claude Code hook propagates `CLAUDE_PLUGIN_DATA`) and V4 (Codex `PostToolUse` fires on Write) were validated manually against real harness sessions and remain documented under the 0.1.2 release notes.
 
 ### Philosophy
 - Embedded the core motivation in the README — Karpathy's progression (text → markdown → HTML → interactive sims) and Thariq's "Unreasonable Effectiveness of HTML" piece, with four explicit philosophy principles tied to the four pillars.

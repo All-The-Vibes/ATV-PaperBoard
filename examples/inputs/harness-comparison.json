@@ -1,11 +1,12 @@
 {
   "title": "Harness Comparison",
-  "subtitle": "Claude Code vs Codex CLI vs OpenCode vs Copilot — atv-paperboard v0.1.0-preview integration matrix",
+  "subtitle": "Claude Code vs Codex CLI vs Copilot CLI vs Copilot Coding Agent — atv-paperboard integration matrix",
   "rows": [
-    {"feature": "Native plugin manifest", "claude_code": "Yes (plugin.json)", "codex": "Yes (openai.yaml)", "opencode": "Yes (TS factory)", "copilot": "No (recipe only)"},
-    {"feature": "Persistence env var", "claude_code": "CLAUDE_PLUGIN_DATA", "codex": "filesystem only", "opencode": "OPENCODE_CONFIG_DIR", "copilot": "workspace ./paperboard-artifacts/"},
-    {"feature": "Hook event names", "claude_code": "PostToolUse", "codex": "PostToolUse (parity)", "opencode": "tool.execute.after", "copilot": "n/a (Coding Agent only)"},
-    {"feature": "Skill discovery", "claude_code": ".claude/skills/", "codex": "~/.agents/skills/", "opencode": "Claude-compatible multi-path", "copilot": "instructions only"},
-    {"feature": "v0.1.0-preview shipped", "claude_code": "Yes", "codex": "Yes", "opencode": "Deferred to v0.1.1", "copilot": "Recipe only"}
+    {"feature": "Integration type", "claude_code": "Native plugin", "codex": "Native plugin", "copilot_cli": "Native plugin", "copilot_coding_agent": "GitHub Actions recipe"},
+    {"feature": "Manifest", "claude_code": ".claude-plugin/plugin.json", "codex": "~/.codex/config.toml block", "copilot_cli": "plugin.json + marketplace.json", "copilot_coding_agent": "workflow.yml"},
+    {"feature": "Persistence root", "claude_code": "${CLAUDE_PLUGIN_DATA}/", "codex": "~/.codex/atv-paperboard-artifacts/", "copilot_cli": "${COPILOT_HOME:-~/.copilot}/plugin-data/atv-paperboard/", "copilot_coding_agent": "${repo}/paperboard-artifacts/"},
+    {"feature": "Hook surface", "claude_code": "PostToolUse", "codex": "[[hooks.PostToolUse]]", "copilot_cli": "PostToolUse (additionalContext channel)", "copilot_coding_agent": "n/a (workflow-driven)"},
+    {"feature": "Marketplace install", "claude_code": "/plugin marketplace add", "codex": "manual config.toml", "copilot_cli": "copilot plugin install", "copilot_coding_agent": "drop workflow.yml.template"},
+    {"feature": "Status", "claude_code": "Shipping", "codex": "Shipping", "copilot_cli": "Shipping (validated against copilot.exe v1.0.49)", "copilot_coding_agent": "Shipping"}
   ]
 }

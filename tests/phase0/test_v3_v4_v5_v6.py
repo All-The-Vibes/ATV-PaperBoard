@@ -35,30 +35,20 @@ _HARNESS_ENVS: list[tuple[str, dict[str, str], dict[str, str], str]] = [
     (
         "codex",
         {"CODEX_HOME": "/home/user/.codex"},
-        {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "GITHUB_ACTIONS": "",
-         "OPENCODE_CONFIG_DIR": ""},
+        {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "GITHUB_ACTIONS": ""},
         "codex",
-    ),
-    (
-        "opencode",
-        {"OPENCODE_CONFIG_DIR": "/home/user/.config/opencode"},
-        {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "GITHUB_ACTIONS": "",
-         "CODEX_HOME": ""},
-        "opencode",
     ),
     (
         "copilot-coding-agent",
         {"GITHUB_ACTIONS": "true"},
-        {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "OPENCODE_CONFIG_DIR": "",
-         "CODEX_HOME": ""},
+        {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "CODEX_HOME": ""},
         "copilot-coding-agent",
     ),
     (
         "standalone",
         {},
         {"CLAUDE_PLUGIN_ROOT": "", "CLAUDE_PLUGIN_DATA": "", "GITHUB_ACTIONS": "",
-         "OPENCODE_CONFIG_DIR": "", "CODEX_HOME": "", "VSCODE_PID": "",
-         "TERM_PROGRAM": ""},
+         "CODEX_HOME": "", "VSCODE_PID": "", "TERM_PROGRAM": ""},
         "standalone",
     ),
 ]
@@ -86,7 +76,7 @@ def test_v5_detect_harness_mock_envs(
     # Also clear all harness vars not explicitly set
     for key in (
         "CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA", "GITHUB_ACTIONS",
-        "OPENCODE_CONFIG_DIR", "CODEX_HOME", "VSCODE_PID", "TERM_PROGRAM",
+        "CODEX_HOME", "VSCODE_PID", "TERM_PROGRAM",
     ):
         if key not in env_set:
             monkeypatch.delenv(key, raising=False)
