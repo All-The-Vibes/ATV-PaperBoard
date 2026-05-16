@@ -43,6 +43,7 @@ _DEFAULT_DESIGN = Path(__file__).parent.parent / "designs" / "paperboard.DESIGN.
 _TIER_TEMPLATES = {
     "pico": "pico-tier.html.j2",
     "daisy": "daisy-tier.html.j2",
+    "atv": "atv-tier.html.j2",
 }
 _GENERATOR = "atv-paperboard/0.1.0"
 
@@ -56,10 +57,20 @@ _PICO_TOKEN_MAP: dict[str, str] = {
     "--color-foreground": "--pico-color",
     "--color-muted": "--pico-muted-color",
     "--color-border": "--pico-border-color",
-    "--color-accent": "--pico-contrast",
-    "--color-accent-500": "--pico-contrast",
+    "--color-border-500": "--pico-border-color",
+    # Pico also reads `--pico-muted-border-color` for the footer divider and other
+    # subtle separators; map our `colors.border` token to it as well.
     "--font-family": "--pico-font-family",
     "--font-size": "--pico-font-size",
+    # Heading family/size aliases: DESIGN.md `typography.body` is emitted as
+    # `--font-family-body` by the flattener (typography uses body/heading/mono
+    # role names, not sans/DEFAULT), so a generic `--font-family` alias never
+    # fires through the flattener's `sans`/`DEFAULT` early-return. Map the
+    # role-specific keys directly so Pico's font stack actually changes.
+    "--font-family-body": "--pico-font-family",
+    "--font-size-body": "--pico-font-size",
+    "--color-accent": "--pico-contrast",
+    "--color-accent-500": "--pico-contrast",
 }
 
 _DAISY_TOKEN_MAP: dict[str, str] = {
@@ -75,6 +86,8 @@ _DAISY_TOKEN_MAP: dict[str, str] = {
     "--color-border": "--b2",
     "--font-family": "--font-family",
     "--font-size": "--font-size",
+    "--font-family-body": "--font-family",
+    "--font-size-body": "--font-size",
 }
 
 
@@ -161,12 +174,18 @@ def render_artifact(
     body_html = _default_body_html(input_data)
     env = Environment(loader=FileSystemLoader(str(_TEMPLATES_DIR)), autoescape=False)
     template = env.get_template(_TIER_TEMPLATES[tier])
-    html_content = template.render(
-        title=title,
-        tokens=tokens,
-        body_html=body_html,
-        design_md_path=dest_design_path.name,
-    )
+    template_ctx: dict[str, Any] = {
+        "title": title,
+        "tokens": tokens,
+        "body_html": body_html,
+        "design_md_path": dest_design_path.name,
+    }
+    # The atv tier supports a topbar with brand / breadcrumb / status pill.
+    if tier == "atv":
+        template_ctx["brand"] = input_data.get("brand", "atv-paperboard")
+        template_ctx["breadcrumb"] = input_data.get("breadcrumb", "")
+        template_ctx["status_tag"] = input_data.get("status_tag", "rendered")
+    html_content = template.render(**template_ctx)
     html_path.write_text(html_content, encoding="utf-8")
 
     # Write meta.yaml sidecar
@@ -308,14 +327,28 @@ def _default_body_html(input_data: dict[str, Any]) -> str:
     """Convert input_data to an HTML body string.
 
     Priority:
-      1. body_html — returned as-is.
-      2. body_md   — converted via tiny built-in markdown converter.
-      3. rows      — rendered as an HTML <table>.
-      4. fallback  — <pre><code> with JSON dump.
+      1. sections   — rich atv-tier section graph (hero / sec / stack-list / dep-list / q-list / steps / code-shell / color-strip / fit-row / anti / checklist / callout / props-table / file-path / subhead)
+      2. body_html  — returned as-is.
+      3. body_md    — converted via tiny built-in markdown converter.
+      4. rows       — rendered as an HTML <table>.
+      5. fallback   — <pre><code> with JSON dump.
 
-    A header section (h1 title + h2 subtitle) is always prepended.
+    A header section (h1 title + h2 subtitle) is always prepended UNLESS
+    `sections` is supplied (those sections own their own headers via the hero kind).
     """
     parts: list[str] = []
+
+    # Rich section graph (atv tier)
+    sections = input_data.get("sections")
+    if sections and isinstance(sections, list):
+        for section in sections:
+            if not isinstance(section, dict):
+                continue
+            kind = section.get("kind", "")
+            emitter = _SECTION_EMITTERS.get(kind)
+            if emitter:
+                parts.append(emitter(section))
+        return "\n".join(parts)
 
     title = input_data.get("title")
     subtitle = input_data.get("subtitle")
@@ -340,6 +373,345 @@ def _default_body_html(input_data: dict[str, Any]) -> str:
     # Fallback: JSON dump
     parts.append(f"<pre><code>{_html_lib.escape(json.dumps(input_data, indent=2))}</code></pre>")
     return "\n".join(parts)
+
+
+# ── Section emitters for the atv tier ─────��──────────────────────────────────
+
+
+def _e(s: Any) -> str:
+    """Shorthand for HTML-escape with str-coercion."""
+    return _html_lib.escape(str(s)) if s is not None else ""
+
+
+def _classes(*xs: str) -> str:
+    return " ".join(x for x in xs if x)
+
+
+def _emit_hero(s: dict[str, Any]) -> str:
+    """`hero` section: eyebrow + h1 + sub + meta strip."""
+    eyebrow = s.get("eyebrow", "")
+    title = s.get("title", "")
+    title_into = s.get("title_into", "")  # optional grayed-out continuation
+    sub = s.get("sub", "")
+    meta = s.get("meta", [])  # list of {label, value}
+
+    title_html = _e(title)
+    if title_into:
+        title_html = f'{title_html} <span class="into">{_e(title_into)}</span>'
+
+    meta_html = ""
+    if meta:
+        items = "".join(
+            f'<div class="item">{_e(m.get("label", ""))} <span class="v">{_e(m.get("value", ""))}</span></div>'
+            for m in meta if isinstance(m, dict)
+        )
+        meta_html = f'<div class="hero-meta">{items}</div>'
+
+    eyebrow_html = (
+        f'<div class="eyebrow"><span class="bar"></span>{_e(eyebrow)}</div>'
+        if eyebrow else ""
+    )
+    sub_html = f'<p class="sub">{_e(sub)}</p>' if sub else ""
+
+    return (
+        f'<section class="hero">'
+        f'{eyebrow_html}'
+        f'<h1>{title_html}</h1>'
+        f'{sub_html}'
+        f'{meta_html}'
+        f'</section>'
+    )
+
+
+def _emit_section(s: dict[str, Any]) -> str:
+    """`sec` wrapper: numbered section head with eyebrow + h2 + lede + inner content."""
+    num = s.get("num", "")
+    eyebrow = s.get("eyebrow", "")
+    title = s.get("title", "")
+    aside = s.get("aside", "")
+    lede = s.get("lede", "")
+    zebra = s.get("zebra", False)
+    tight = s.get("tight", False)
+    inner_sections = s.get("body", [])  # list of nested sub-kinds
+
+    sec_classes = _classes("sec", "zebra" if zebra else "", "tight" if tight else "")
+
+    head_parts = []
+    if num:     head_parts.append(f'<span class="num mono">{_e(num)}</span>')
+    if eyebrow: head_parts.append(f'<span class="eyebrow">{_e(eyebrow)}</span>')
+    if title:   head_parts.append(f'<h2>{_e(title)}</h2>')
+    if aside:   head_parts.append(f'<span class="aside">{_e(aside)}</span>')
+
+    head_html = f'<div class="sec-head">{"".join(head_parts)}</div>' if head_parts else ""
+    lede_html = f'<p class="sec-lede">{_e(lede)}</p>' if lede else ""
+
+    inner_html = ""
+    if isinstance(inner_sections, list):
+        for child in inner_sections:
+            if not isinstance(child, dict):
+                continue
+            emitter = _SECTION_EMITTERS.get(child.get("kind", ""))
+            if emitter:
+                inner_html += emitter(child)
+
+    return f'<section class="{sec_classes}">{head_html}{lede_html}{inner_html}</section>'
+
+
+def _emit_stack_list(s: dict[str, Any]) -> str:
+    """`stack-list`: three-column list (name+tag / why / fix). Rows: [{name, tag, tag_kind, why, fix}]."""
+    rows = s.get("rows", [])
+    row_html = []
+    tag_class_map = {"shadcn": "stack-tag-shadcn", "tailwind": "stack-tag-tailwind", "typescript": "stack-tag-typescript"}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        name = r.get("name", "")
+        tag = r.get("tag", "")
+        tag_kind = r.get("tag_kind", "")
+        why = r.get("why", "")
+        fix = r.get("fix", "")
+        tag_html = ""
+        if tag:
+            extra = tag_class_map.get(tag_kind, "")
+            tag_html = f'<span class="stack-tag {extra}">{_e(tag)}</span>'
+        row_html.append(
+            f'<div class="stack-row">'
+            f'<div class="stack-name"><span class="mono">{_e(name)}</span>{tag_html}</div>'
+            f'<div class="stack-why">{why}</div>'  # allow inline html
+            f'<div class="stack-fix muted">{fix}</div>'
+            f'</div>'
+        )
+    return f'<div class="stack-list">{"".join(row_html)}</div>'
+
+
+def _emit_dep_list(s: dict[str, Any]) -> str:
+    """`dep-list`: four-column list (name+tag / role / why / version)."""
+    rows = s.get("rows", [])
+    row_html = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        name = r.get("name", "")
+        tag = r.get("tag", "")  # required | transitive | (any)
+        role = r.get("role", "")
+        why = r.get("why", "")
+        version = r.get("version", "")
+        tag_class = "dep-tag-required" if tag == "required" else ("dep-tag-transitive" if tag == "transitive" else "")
+        tag_html = f'<span class="dep-tag {tag_class}">{_e(tag)}</span>' if tag else ""
+        row_html.append(
+            f'<div class="dep-row">'
+            f'<div class="dep-col-name"><span class="mono dep-name">{_e(name)}</span>{tag_html}</div>'
+            f'<div class="dep-col-role">{_e(role)}</div>'
+            f'<div class="dep-col-why">{why}</div>'
+            f'<div class="dep-col-ver mono">{_e(version)}</div>'
+            f'</div>'
+        )
+    return f'<div class="dep-list">{"".join(row_html)}</div>'
+
+
+def _emit_q_list(s: dict[str, Any]) -> str:
+    """`q-list`: numbered Q&A list. Rows: [{num, title, body}]."""
+    rows = s.get("rows", [])
+    row_html = []
+    for i, r in enumerate(rows, start=1):
+        if not isinstance(r, dict):
+            continue
+        num = r.get("num", f"{i:02d}")
+        title = r.get("title", "")
+        body = r.get("body", "")
+        row_html.append(
+            f'<div class="q-row">'
+            f'<span class="q-num mono">{_e(num)}</span>'
+            f'<div class="q-body"><h4>{_e(title)}</h4><p>{body}</p></div>'
+            f'</div>'
+        )
+    return f'<div class="q-list">{"".join(row_html)}</div>'
+
+
+def _emit_steps(s: dict[str, Any]) -> str:
+    """`steps`: timeline of numbered steps. Rows: [{num, title, desc}]."""
+    rows = s.get("rows", [])
+    row_html = []
+    for i, r in enumerate(rows, start=0):
+        if not isinstance(r, dict):
+            continue
+        num = r.get("num", f"{i:02d}")
+        title = r.get("title", "")
+        desc = r.get("desc", "")
+        row_html.append(
+            f'<div class="step-row">'
+            f'<span class="step-num mono">{_e(num)}</span>'
+            f'<div class="step-body"><div class="step-title">{_e(title)}</div><div class="step-desc">{desc}</div></div>'
+            f'</div>'
+        )
+    return f'<div class="steps">{"".join(row_html)}</div>'
+
+
+def _emit_code_shell(s: dict[str, Any]) -> str:
+    """`code-shell`: macOS-style code block with traffic dots + language tag."""
+    lang = s.get("lang", "")
+    code = s.get("code", "")
+    path = s.get("path", "")
+    path_html = f'<div class="file-path">{_e(path)}</div>' if path else ""
+    return (
+        f'{path_html}'
+        f'<div class="code-shell">'
+        f'<div class="code-bar">'
+        f'<span class="code-dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span>'
+        f'<span class="code-lang">{_e(lang)}</span>'
+        f'</div>'
+        f'<pre class="code"><code>{_e(code)}</code></pre>'
+        f'</div>'
+    )
+
+
+def _emit_color_strip(s: dict[str, Any]) -> str:
+    """`color-strip`: grid of color swatches. Colors: [{hex, name, role}]."""
+    colors = s.get("colors", [])
+    cells = []
+    for c in colors:
+        if not isinstance(c, dict):
+            continue
+        hex_value = c.get("hex", "#000000")
+        name = c.get("name", "")
+        role = c.get("role", "")
+        cells.append(
+            f'<div class="color-cell">'
+            f'<div class="color-swatch" style="background:{_e(hex_value)};"></div>'
+            f'<div class="color-meta">'
+            f'<span class="color-hex mono">{_e(hex_value)}</span>'
+            f'<span class="color-name">{_e(name)}</span>'
+            f'<span class="color-role">{_e(role)}</span>'
+            f'</div>'
+            f'</div>'
+        )
+    return f'<div class="color-strip">{"".join(cells)}</div>'
+
+
+def _emit_fit_row(s: dict[str, Any]) -> str:
+    """`fit-row`: pill list with leading status dots. Items: [{label, avoid?}]."""
+    items = s.get("items", [])
+    chip_html = []
+    for it in items:
+        if isinstance(it, dict):
+            label = it.get("label", "")
+            avoid = bool(it.get("avoid", False))
+        else:
+            label = str(it)
+            avoid = False
+        cls = "fit avoid" if avoid else "fit"
+        chip_html.append(f'<span class="{cls}">{_e(label)}</span>')
+    return f'<div class="fit-row">{"".join(chip_html)}</div>'
+
+
+def _emit_anti(s: dict[str, Any]) -> str:
+    """`anti`: anti-pattern block with DO NOT label and bullet list."""
+    items = s.get("items", [])
+    li = "".join(f'<li>{x}</li>' for x in items)
+    return f'<div class="anti"><ul>{li}</ul></div>'
+
+
+def _emit_checklist(s: dict[str, Any]) -> str:
+    """`checklist`: single-column list with mono `·` markers."""
+    items = s.get("items", [])
+    rows = "".join(
+        f'<div class="chk"><span class="chk-mark">·</span><span>{x}</span></div>'
+        for x in items
+    )
+    return f'<div class="check-list">{rows}</div>'
+
+
+def _emit_callout(s: dict[str, Any]) -> str:
+    """`callout`: accent-tinted advisory block. Items: [...] (li bullets)."""
+    title = s.get("title", "")
+    items = s.get("items", [])
+    body = s.get("body", "")
+    title_html = f'<h4>{_e(title)}</h4>' if title else ""
+    list_html = ""
+    if items:
+        list_html = "<ul>" + "".join(f"<li>{x}</li>" for x in items) + "</ul>"
+    body_html = f"<p>{body}</p>" if body else ""
+    return f'<div class="callout">{title_html}{list_html}{body_html}</div>'
+
+
+def _emit_subhead(s: dict[str, Any]) -> str:
+    return f'<div class="subhead">{_e(s.get("text", ""))}</div>'
+
+
+def _emit_props_table(s: dict[str, Any]) -> str:
+    """`props-table`: classic prop/type/default/notes table."""
+    headers = s.get("headers", ["Prop", "Type", "Default", "Notes"])
+    rows = s.get("rows", [])
+    th = "".join(f"<th>{_e(h)}</th>" for h in headers)
+    tr = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        name = r.get("name", "")
+        type_ = r.get("type", "")
+        default = r.get("default", "")
+        notes = r.get("notes", "")
+        tr.append(
+            f'<tr>'
+            f'<td class="mono prop-name">{_e(name)}</td>'
+            f'<td><span class="type-pill mono">{_e(type_)}</span></td>'
+            f'<td class="mono small muted">{_e(default)}</td>'
+            f'<td class="muted">{notes}</td>'
+            f'</tr>'
+        )
+    return f'<table class="props"><thead><tr>{th}</tr></thead><tbody>{"".join(tr)}</tbody></table>'
+
+
+def _emit_status_table(s: dict[str, Any]) -> str:
+    """`status-table`: typed table where the status column becomes a colored badge.
+
+    Auto-detects a status column from headers matching status|state|result.
+    Values like DONE / PASS get green badges, FAIL / ERROR red, IN_PROGRESS indigo, etc.
+    Rows: list of dicts (column-name -> value).
+    """
+    rows = s.get("rows", [])
+    if not rows or not isinstance(rows[0], dict):
+        return ""
+    headers = list(rows[0].keys())
+    status_col = None
+    for h in headers:
+        if h.lower() in ("status", "state", "result"):
+            status_col = h
+            break
+
+    th = "".join(f"<th>{_e(h)}</th>" for h in headers)
+    tr = []
+    for r in rows:
+        cells = []
+        for h in headers:
+            v = str(r.get(h, ""))
+            if h == status_col:
+                badge_class = v.lower().replace("_", "-").replace(" ", "-")
+                cells.append(f'<td><span class="badge {badge_class}">{_e(v)}</span></td>')
+            else:
+                cells.append(f'<td>{_e(v)}</td>')
+        tr.append(f'<tr>{"".join(cells)}</tr>')
+    return f'<table class="props"><thead><tr>{th}</tr></thead><tbody>{"".join(tr)}</tbody></table>'
+
+
+# Registry of section kinds → emitter functions
+_SECTION_EMITTERS: dict[str, Any] = {
+    "hero": _emit_hero,
+    "sec": _emit_section,
+    "stack-list": _emit_stack_list,
+    "dep-list": _emit_dep_list,
+    "q-list": _emit_q_list,
+    "steps": _emit_steps,
+    "code-shell": _emit_code_shell,
+    "color-strip": _emit_color_strip,
+    "fit-row": _emit_fit_row,
+    "anti": _emit_anti,
+    "checklist": _emit_checklist,
+    "callout": _emit_callout,
+    "subhead": _emit_subhead,
+    "props-table": _emit_props_table,
+    "status-table": _emit_status_table,
+}
 
 
 def _md_to_html(md: str) -> str:

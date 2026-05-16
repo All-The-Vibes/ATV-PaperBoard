@@ -24,7 +24,7 @@ paperboard regenerate <slug>
 
 | Step | Change | Rationale |
 |------|--------|-----------|
-| 1 | Switch tier (pico ↔ daisy) | Different CSS framework may avoid inline color conflicts |
+| 1 | Switch tier (cycle among atv / pico / daisy; atv is default) | Different tier/CSS framework may avoid inline color conflicts |
 | 2 | Drop optional components from input | Reduces surface area for color violations |
 | 3 | Fall back to `paperboard.DESIGN.md` | Known-good default design always lints clean |
 

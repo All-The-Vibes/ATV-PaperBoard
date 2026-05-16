@@ -18,10 +18,17 @@ Invoke after any tool writes a file that matches **one or more** of these patter
 ## How to invoke
 
 ```bash
-paperboard render --input <path-to-file> [--tier pico|daisy] [--no-open]
+paperboard render --input <path-to-file> [--tier atv|pico|daisy] [--no-open]
 ```
 
 Pass `--no-open` in CI / headless environments.
+
+## Tier policy
+
+Default tier is **`atv`** for dashboards and reports — it is the dark, designed-document
+tier and is the right choice for nearly all agent-generated artifacts. Use **`pico`**
+(or `daisy`) only when the target audience explicitly wants a light, framework-styled
+document. When in doubt, omit `--tier` and let the `atv` default apply.
 
 ## After rendering
 

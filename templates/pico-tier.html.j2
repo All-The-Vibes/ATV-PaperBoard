@@ -9,16 +9,33 @@
     href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
   />
   <style>
-    /* ── Token overrides injected by atv-paperboard render layer ── */
-    :root {
+    /* ── Token overrides injected by atv-paperboard render layer ──
+       Pico v2 declares its theme vars under `[data-theme=light]`. The
+       cascade order between Pico's external stylesheet and our inline
+       `<style>` is racy (Pico can finish loading after our block parses,
+       which causes Pico's values to win even at equal specificity).
+       `!important` removes the race entirely: regardless of fetch order,
+       our DESIGN.md tokens always win for the variables we declare.
+       Pico's internal `--pico-*` variables that we don't override remain
+       at their defaults — we only force the ones the DESIGN.md owns. */
+    html[data-theme="light"], :root {
 {% for var, value in tokens.items() %}
-      {{ var }}: {{ value }};
+      {{ var }}: {{ value }} !important;
 {% endfor %}
+      /* Bind Pico's per-heading color vars to --pico-primary so DESIGN.md
+         `colors.primary` reaches h1..h6 (Pico defaults them to a gray ramp). */
+      --pico-h1-color: var(--pico-primary) !important;
+      --pico-h2-color: var(--pico-primary) !important;
+      --pico-h3-color: var(--pico-primary) !important;
+      --pico-h4-color: var(--pico-primary) !important;
+      --pico-h5-color: var(--pico-primary) !important;
+      --pico-h6-color: var(--pico-primary) !important;
     }
 
     body {
       padding: 0;
       margin: 0;
+      background-color: var(--pico-background-color);
     }
 
     .pb-content {

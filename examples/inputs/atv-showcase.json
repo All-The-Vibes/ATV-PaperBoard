@@ -1,0 +1,203 @@
+{
+  "title": "atv-paperboard v0.2.0 — Render Pipeline Report",
+  "brand": "atv-paperboard",
+  "breadcrumb": "atv-paperboard<span class=\"sep\">/</span>release<span class=\"sep\">/</span><span class=\"cur\">v0.2.0</span>",
+  "status_tag": "rendered",
+  "sections": [
+    {
+      "kind": "hero",
+      "eyebrow": "Release report · v0.2.0",
+      "title": "ATV tier now renders artifacts as designed documents,",
+      "title_into": "not colored tables.",
+      "sub": "Six section kinds, one opinionated dark template, zero CDN dependencies. Every artifact emitted from this tier carries the same visual language used internally at design-driven shops, generated programmatically from a structured input contract.",
+      "meta": [
+        {"label": "Version", "value": "v0.2.0"},
+        {"label": "Tier", "value": "atv (default)"},
+        {"label": "Sections", "value": "15 kinds"},
+        {"label": "Theme", "value": "dark-scoped"},
+        {"label": "Stack", "value": "Jinja2 + tokens"}
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "00",
+      "eyebrow": "Status",
+      "title": "Render pipeline health.",
+      "aside": "live",
+      "lede": "End-to-end view of the render pipeline. Each row is a phase, with the live status of its acceptance test.",
+      "body": [
+        {
+          "kind": "status-table",
+          "rows": [
+            {"phase": "Phase 0: Verification matrix", "status": "DONE", "tests": "9/9", "duration_min": 16},
+            {"phase": "Phase 1: RENDER pillar",        "status": "DONE", "tests": "14/14", "duration_min": 26},
+            {"phase": "Phase 2: ENFORCE pillar",       "status": "DONE", "tests": "12/12", "duration_min": 26},
+            {"phase": "Phase 3: Starters",             "status": "DONE", "tests": "11/11", "duration_min": 18},
+            {"phase": "Phase 4: Claude Code adapter",  "status": "DONE", "tests": "17/17", "duration_min": 17},
+            {"phase": "Phase 5: Codex adapter",        "status": "DONE", "tests": "14/14", "duration_min": 9},
+            {"phase": "Phase 6: COMPOUND + Copilot",   "status": "DONE", "tests": "7/7",   "duration_min": 20},
+            {"phase": "Phase 7a: Real-world hardening","status": "DONE", "tests": "RW-1..10", "duration_min": 32},
+            {"phase": "Phase 8: atv tier (v0.2.0)",    "status": "IN_PROGRESS", "tests": "writing this artifact", "duration_min": null}
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "01",
+      "eyebrow": "Surface",
+      "title": "Section kinds the renderer understands.",
+      "aside": "15 kinds",
+      "zebra": true,
+      "lede": "Each section is emitted by a small dedicated function that maps an input dict to opinionated HTML. The CSS in atv-tier.html.j2 owns the rest.",
+      "body": [
+        {
+          "kind": "stack-list",
+          "rows": [
+            {"name": "hero",         "tag": "layout",  "tag_kind": "shadcn",     "why": "Top-of-page eyebrow, headline, sub, meta strip. One per artifact.", "fix": "<code>{kind: hero, title, sub, meta}</code>"},
+            {"name": "sec",          "tag": "layout",  "tag_kind": "shadcn",     "why": "Numbered section head with optional aside pill. Wraps inner sections.", "fix": "<code>{kind: sec, num, eyebrow, title, body: [...]}</code>"},
+            {"name": "stack-list",   "tag": "list",    "tag_kind": "tailwind",   "why": "Three-column hairline list. Best for &quot;item / why / fix&quot; rows.", "fix": "<code>rows: [{name, tag, why, fix}]</code>"},
+            {"name": "dep-list",     "tag": "list",    "tag_kind": "tailwind",   "why": "Four-column list with role + version. Best for dependencies and audits.", "fix": "<code>rows: [{name, tag, role, why, version}]</code>"},
+            {"name": "q-list",       "tag": "list",    "tag_kind": "typescript", "why": "Numbered question-and-answer rows. Best for intake checklists.", "fix": "<code>rows: [{title, body}]</code>"},
+            {"name": "steps",        "tag": "list",    "tag_kind": "typescript", "why": "Vertical timeline with dot markers. Best for sequential procedures.", "fix": "<code>rows: [{title, desc}]</code>"},
+            {"name": "code-shell",   "tag": "code",    "tag_kind": "shadcn",     "why": "macOS-style code block with traffic dots + language tag.", "fix": "<code>{kind: code-shell, lang, code, path}</code>"},
+            {"name": "status-table", "tag": "table",   "tag_kind": "tailwind",   "why": "Typed table with auto status badges (DONE/PASS green, FAIL red, IN_PROGRESS indigo).", "fix": "<code>rows: [&hellip;]</code>"},
+            {"name": "color-strip",  "tag": "viz",     "tag_kind": "tailwind",   "why": "Six-cell palette swatches with hex + name + role.", "fix": "<code>colors: [{hex, name, role}]</code>"},
+            {"name": "fit-row",      "tag": "chips",   "tag_kind": "typescript", "why": "Pill chips with green/rose dots for fit / avoid signals.", "fix": "<code>items: [{label, avoid?}]</code>"},
+            {"name": "anti",         "tag": "block",   "tag_kind": "shadcn",     "why": "Anti-pattern block with DO NOT mono label and bullet list.", "fix": "<code>items: [&hellip;]</code>"},
+            {"name": "checklist",    "tag": "list",    "tag_kind": "shadcn",     "why": "Single-column hairline-separated list with mono · markers.", "fix": "<code>items: [&hellip;]</code>"},
+            {"name": "callout",      "tag": "block",   "tag_kind": "tailwind",   "why": "Accent-tinted advisory block. Use sparingly.", "fix": "<code>{title, items}</code>"},
+            {"name": "props-table",  "tag": "table",   "tag_kind": "typescript", "why": "Classic prop/type/default/notes table for API surfaces.", "fix": "<code>rows: [{name, type, default, notes}]</code>"},
+            {"name": "subhead",      "tag": "label",   "tag_kind": "shadcn",     "why": "Mono uppercase label inside a section. For sub-grouping.", "fix": "<code>{kind: subhead, text}</code>"}
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "02",
+      "eyebrow": "Palette",
+      "title": "Tokens consumed by the atv tier.",
+      "aside": "10 colors",
+      "lede": "These are the tokens declared in designs/atv.DESIGN.md. Every other color in the rendered output is derived (semi-transparent overlays, hairline borders, glow ambients).",
+      "body": [
+        {
+          "kind": "color-strip",
+          "colors": [
+            {"hex": "#08090a", "name": "Background", "role": "Page canvas, near-black with a hint of blue."},
+            {"hex": "#0e0f12", "name": "Surface",    "role": "Container fill for cards, lists, tables."},
+            {"hex": "#7170ff", "name": "Accent",     "role": "Indigo. Interactive highlights, file-path markers."},
+            {"hex": "#f43f5e", "name": "Rose",       "role": "Counter-accent for status dots, never fills."},
+            {"hex": "#34d399", "name": "Success",    "role": "Dot indicators on fit chips and topbar tag."},
+            {"hex": "#fb7185", "name": "Danger",     "role": "Dot indicators on avoid chips and fail badges."}
+          ]
+        },
+        {"kind": "subhead", "text": "Industry fit"},
+        {
+          "kind": "fit-row",
+          "items": [
+            {"label": "Engineering reports"},
+            {"label": "Migration notes"},
+            {"label": "Bug-hunt summaries"},
+            {"label": "Integration docs"},
+            {"label": "Status dashboards"},
+            {"label": "Marketing pages", "avoid": true},
+            {"label": "Childrens content", "avoid": true},
+            {"label": "Healthcare patient-facing", "avoid": true}
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "03",
+      "eyebrow": "Surface",
+      "title": "Input contract.",
+      "aside": "stable",
+      "zebra": true,
+      "lede": "The atv tier reads the same input shape as the legacy tiers, with one addition: a <code>sections: [&hellip;]</code> array. When present, the section emitters take over and the legacy <code>rows</code> / <code>body_md</code> paths are bypassed.",
+      "body": [
+        {
+          "kind": "props-table",
+          "rows": [
+            {"name": "title",       "type": "string",  "default": "Untitled Artifact", "notes": "Sets <code>&lt;title&gt;</code> and slug. Hero section owns the visible H1."},
+            {"name": "brand",       "type": "string",  "default": "&quot;atv-paperboard&quot;", "notes": "Topbar brand label."},
+            {"name": "breadcrumb",  "type": "string",  "default": "&quot;&quot;",       "notes": "Topbar breadcrumb, plain HTML allowed."},
+            {"name": "status_tag",  "type": "string",  "default": "&quot;rendered&quot;","notes": "Topbar status pill text."},
+            {"name": "sections",    "type": "section[]","default": "(none)",            "notes": "Rich section graph. When set, takes precedence over rows/body_md."}
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "04",
+      "eyebrow": "Example",
+      "title": "How a section is declared.",
+      "aside": "JSON",
+      "lede": "The same shape across every section: a <code>kind</code> discriminator plus kind-specific fields.",
+      "body": [
+        {
+          "kind": "code-shell",
+          "path": "examples/inputs/atv-showcase.json",
+          "lang": "json",
+          "code": "{\n  \"title\": \"Render Pipeline Report\",\n  \"sections\": [\n    {\n      \"kind\": \"hero\",\n      \"eyebrow\": \"Release report\",\n      \"title\": \"ATV tier renders artifacts as designed documents.\",\n      \"sub\": \"...\",\n      \"meta\": [{\"label\": \"Version\", \"value\": \"v0.2.0\"}]\n    },\n    {\n      \"kind\": \"sec\",\n      \"num\": \"01\",\n      \"eyebrow\": \"Status\",\n      \"title\": \"Pipeline health.\",\n      \"body\": [\n        {\"kind\": \"status-table\", \"rows\": [...]}\n      ]\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "05",
+      "eyebrow": "Guidance",
+      "title": "Design intent.",
+      "aside": "read once",
+      "lede": "These rules are not enforced by code. They are how the design holds together.",
+      "body": [
+        {
+          "kind": "checklist",
+          "items": [
+            "Exactly one hero per artifact, at the top.",
+            "Number every section. <code>00</code> through <code>NN</code>, two digits.",
+            "Lede paragraphs no longer than three sentences.",
+            "Avoid filling more than 15% of the surface with accent or rose.",
+            "No emojis in section heads. Mono eyebrows only.",
+            "Code shells get a file-path marker when the code targets a specific file."
+          ]
+        },
+        {
+          "kind": "anti",
+          "items": [
+            "Do not introduce a light theme inside an atv-tier artifact.",
+            "Do not stack two hero sections.",
+            "Do not use <code>status-table</code> for non-status data &mdash; the badges will mislead.",
+            "Do not nest <code>sec</code> inside <code>sec</code> beyond two levels.",
+            "Do not add custom CSS to the rendered HTML. Edit the template."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "sec",
+      "num": "06",
+      "eyebrow": "QA",
+      "title": "Acceptance checks.",
+      "aside": "6 checks",
+      "zebra": true,
+      "tight": true,
+      "lede": "Pre-merge gate for the v0.2.0 release.",
+      "body": [
+        {
+          "kind": "checklist",
+          "items": [
+            "Headless Chrome screenshot of this artifact shows the dark canvas (rgb(8,9,10)).",
+            "Hero H1 is visible in white at the top of the file.",
+            "Status badges in section 00 are colored (green / indigo) not gray.",
+            "Color strip in section 02 shows six distinct swatches.",
+            "Test suite passes (pytest tests/ -q).",
+            "DESIGN.md lint passes for designs/atv.DESIGN.md."
+          ]
+        }
+      ]
+    }
+  ]
+}

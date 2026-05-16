@@ -43,6 +43,10 @@ paperboard-artifacts/
 # Teaser workstream (separate)
 teaser/
 
+# Sandbox under release-proof is regenerable harness state
+_release-proof/sandbox/
+_release-proof/**/.suggest-cooldown
+
 # Sub-agent worktree scratch (created by Agent tool isolation mode)
 .claude/worktrees/
 
@@ -82,3 +86,6 @@ temp/
 *.tsbuildinfo
 coverage/
 .nyc_output/
+
+# Adapter build outputs (per-adapter `_dist/` produced by build.py)
+adapters/*/_dist/

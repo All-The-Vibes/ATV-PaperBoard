@@ -25,7 +25,7 @@ This tells GitHub Copilot Coding Agent when to invoke `paperboard render`.
 
 1. Go to **Settings → Copilot → Coding agent**.
 2. Enable the agent for this repository.
-3. Optionally set `PAPERBOARD_TIER=daisy` as a repo secret if you prefer the DaisyUI tier.
+3. The default tier is `atv` (dark designed-document) — recommended for dashboards and reports. Optionally set `PAPERBOARD_TIER=pico` (or `daisy`) as a repo secret only if your audience explicitly wants a light, framework-styled document.
 
 ### 4. Commit and push
 

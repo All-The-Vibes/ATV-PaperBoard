@@ -13,18 +13,19 @@
     type="text/css"
   />
   <style>
-    /* ── Token overrides injected by atv-paperboard render layer ── */
-    :root {
+    /* ── Token overrides injected by atv-paperboard render layer ──
+       daisyUI declares its theme vars under `[data-theme=light]`. The
+       inline-vs-external cascade race is the same problem Pico has —
+       `!important` makes our DESIGN.md tokens unconditionally win. */
+    html[data-theme="light"], :root {
 {% for var, value in tokens.items() %}
-      {{ var }}: {{ value }};
+      {{ var }}: {{ value }} !important;
 {% endfor %}
     }
 
-    /* Map atv-paperboard daisy tokens onto daisyUI HSL vars */
-    [data-theme="light"] {
-{% for var, value in tokens.items() %}
-      {{ var }}: {{ value }};
-{% endfor %}
+    body {
+      background-color: var(--color-background, oklch(var(--b1, 100% 0 0)));
+      color: var(--color-foreground, oklch(var(--bc, 20% 0.02 0)));
     }
 
     .pb-content {

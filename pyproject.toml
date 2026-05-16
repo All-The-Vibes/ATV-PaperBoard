@@ -5,12 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "atv-paperboard"
 version = "0.1.0a1"
-description = "Cross-harness HTML artifact toolkit. Enforce, render, persist, compound."
+description = "Cross-harness HTML artifact toolkit for AI coding agents — Claude Code, Codex CLI, and GitHub Copilot CLI. Enforce, render, persist, compound."
 readme = "README.md"
 license = { text = "Apache-2.0" }
-authors = [{ name = "atv-paperboard contributors" }]
+authors = [{ name = "All The Vibes" }]
 requires-python = ">=3.10"
-keywords = ["html", "design", "llm", "artifact", "claude-code", "codex", "opencode"]
+keywords = [
+    "html",
+    "design",
+    "llm",
+    "ai-agents",
+    "artifact",
+    "claude-code",
+    "codex",
+    "github-copilot",
+    "copilot-cli",
+    "copilot-coding-agent",
+    "design-md",
+    "design-system",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
@@ -36,9 +49,10 @@ dev = [
 paperboard = "core.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/atv/atv-paperboard"
-Repository = "https://github.com/atv/atv-paperboard"
-Issues = "https://github.com/atv/atv-paperboard/issues"
+Homepage = "https://github.com/All-The-Vibes/ATV-PaperBoard"
+Repository = "https://github.com/All-The-Vibes/ATV-PaperBoard"
+Issues = "https://github.com/All-The-Vibes/ATV-PaperBoard/issues"
+Changelog = "https://github.com/All-The-Vibes/ATV-PaperBoard/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["core*"]

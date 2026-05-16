@@ -1,0 +1,16 @@
+{
+  "name": "atv-paperboard",
+  "description": "Beautify LLM-generated data artifacts into linted HTML triples. Hooks into postToolUse to detect status tables and suggest `paperboard render`. Ships an artifact-reviewer agent. Fail-open: never blocks tool execution.",
+  "version": "0.2.0",
+  "author": {
+    "name": "All The Vibes",
+    "url": "https://github.com/All-The-Vibes/ATV-PaperBoard"
+  },
+  "homepage": "https://github.com/All-The-Vibes/ATV-PaperBoard",
+  "repository": "https://github.com/All-The-Vibes/ATV-PaperBoard",
+  "license": "MIT",
+  "keywords": ["artifact", "render", "linter", "design-system", "data-viz", "html"],
+  "category": "developer-tools",
+  "agents": "agents/",
+  "hooks": "hooks.json"
+}

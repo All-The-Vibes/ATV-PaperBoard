@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_render.add_argument(
         "--tier",
-        choices=["pico", "daisy"],
+        choices=["pico", "daisy", "atv"],
         default="pico",
         help="CSS framework tier (default: pico)",
     )
@@ -101,6 +101,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_detect.add_argument("tool_output", nargs="?", default="", help="TOOL_OUTPUT JSON string")
 
+    # copilot-post-tool-use (Copilot CLI hook helper; stdin-JSON, fail-open)
+    sub.add_parser(
+        "copilot-post-tool-use",
+        help=(
+            "Copilot CLI postToolUse hook helper — reads stdin JSON and emits "
+            "an additionalContext suggestion when the written file looks like a "
+            "data artifact. Always exits 0 (fail-open per Copilot CLI semantics)."
+        ),
+    )
+
     # doctor
     sub.add_parser("doctor", help="Diagnose atv-paperboard install")
 
@@ -121,6 +131,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_validate_all(args, harness)
     elif args.command == "detect-artifact-candidate":
         return _cmd_detect_artifact_candidate(args, harness)
+    elif args.command == "copilot-post-tool-use":
+        return _cmd_copilot_post_tool_use(args, harness)
     elif args.command == "doctor":
         return _cmd_doctor(args, harness)
     return 0
@@ -239,42 +251,88 @@ def _cmd_validate_all(args: argparse.Namespace, _harness: str) -> int:
 
 def _cmd_detect_artifact_candidate(args: argparse.Namespace, harness: str) -> int:
     """Hook heuristic rules per SPEC §16. Exits 0 silently if not a candidate."""
-    import re  # noqa: PLC0415
+    tool_output = args.tool_output or os.environ.get("TOOL_OUTPUT", "")
+    suggestion = classify_artifact_candidate(tool_output, harness)
+    if suggestion:
+        print(f"\n[atv-paperboard] {suggestion}\n")
+    return 0
+
+
+def _cmd_copilot_post_tool_use(_args: argparse.Namespace, harness: str) -> int:
+    """Copilot CLI postToolUse hook — reads stdin JSON, emits additionalContext.
+
+    Copilot CLI hooks are fail-open: any non-zero exit is logged and execution
+    continues, so this handler always exits 0. Output is JSON with an
+    ``additionalContext`` field that Copilot injects into the agent's next turn.
+
+    Schema source: https://docs.github.com/en/copilot/reference/hooks-reference
+    """
+    from core.hooks.copilot_post_tool_use import (  # noqa: PLC0415
+        emit_response,
+        extract_candidate_path,
+        read_hook_payload,
+    )
+
+    payload = read_hook_payload(sys.stdin)
+    candidate_path = extract_candidate_path(payload)
+    if not candidate_path:
+        emit_response(sys.stdout, None)
+        return 0
+
+    # Honor harness override from hooks.json env block
+    effective_harness = os.environ.get("PAPERBOARD_HARNESS", harness)
+    suggestion = classify_artifact_candidate(candidate_path, effective_harness)
+    emit_response(sys.stdout, suggestion)
+    return 0
+
+
+def classify_artifact_candidate(tool_output: str, harness: str) -> str | None:
+    """Apply SPEC §16 hook heuristic rules.
+
+    Returns a suggestion message string if the path qualifies as an artifact
+    candidate, or ``None`` otherwise. Shared by the Claude Code positional-arg
+    hook (``detect-artifact-candidate``) and the Copilot CLI stdin-JSON hook
+    (``copilot-post-tool-use``) so the two adapters apply identical filters.
+    """
     import time  # noqa: PLC0415
 
-    tool_output = args.tool_output or os.environ.get("TOOL_OUTPUT", "")
+    if not tool_output:
+        return None
 
     # Rule 3: self-recursion guard
     artifact_dir = _resolve_artifact_dir(harness)
     try:
         out_path = Path(tool_output)
         if str(out_path).startswith(str(artifact_dir)):
-            return 0
+            return None
     except (ValueError, TypeError):
         pass
 
     # Rule 2: path-prefix skiplist
     skip_dirs = ("docs/", ".github/", "CHANGELOG", "README")
     if any(str(tool_output).startswith(s) for s in skip_dirs):
-        return 0
+        return None
     if str(tool_output).endswith(".md") and any(
         s in str(tool_output) for s in ("docs/", "CHANGELOG", "README", ".github/")
     ):
-        return 0
+        return None
 
     # Rule 4: suppression window (30s cooldown)
     cooldown_path = artifact_dir / ".suggest-cooldown"
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    if cooldown_path.exists():
+    try:
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        # Persistence dir unwritable — skip cooldown bookkeeping but keep going
+        cooldown_path = None  # type: ignore[assignment]
+    if cooldown_path is not None and cooldown_path.exists():
         try:
             last = float(cooldown_path.read_text().strip())
             if time.time() - last < 30:
-                return 0
+                return None
         except (ValueError, OSError):
             pass
 
     # Rule 1: numeric-or-status column requirement
-    # Try to read the file to check for table content
     content = ""
     try:
         p = Path(tool_output)
@@ -284,15 +342,18 @@ def _cmd_detect_artifact_candidate(args: argparse.Namespace, harness: str) -> in
         content = tool_output
 
     if not _has_data_table(content):
-        return 0
+        return None
 
-    # Emit suggestion
-    cooldown_path.write_text(str(time.time()))
-    print(
-        f"\n[atv-paperboard] This looks like a data artifact. "
-        f"To render it:\n  paperboard render --input {tool_output}\n"
+    # Record cooldown and return suggestion message
+    if cooldown_path is not None:
+        try:
+            cooldown_path.write_text(str(time.time()))
+        except OSError:
+            pass
+    return (
+        f"This looks like a data artifact. To render it:\n"
+        f"  paperboard render --input {tool_output}"
     )
-    return 0
 
 
 def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
