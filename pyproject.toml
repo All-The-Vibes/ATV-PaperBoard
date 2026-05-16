@@ -5,24 +5,32 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "atv-paperboard"
 version = "0.1.0a1"
-description = "Cross-harness HTML artifact toolkit for AI coding agents — Claude Code, Codex CLI, and GitHub Copilot CLI. Enforce, render, persist, compound."
+description = "Cross-harness HTML artifact toolkit for AI coding agents. Native plugins for Claude Code, Codex CLI, and GitHub Copilot CLI + GitHub Actions recipe for the Copilot Coding Agent. Enforce, render, persist, compound."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "All The Vibes" }]
 requires-python = ">=3.10"
 keywords = [
-    "html",
-    "design",
-    "llm",
     "ai-agents",
-    "artifact",
+    "ai-coding",
+    "llm-tools",
     "claude-code",
-    "codex",
-    "github-copilot",
+    "codex-cli",
     "copilot-cli",
+    "github-copilot",
     "copilot-coding-agent",
+    "agent-plugin",
+    "agent-skills",
+    "agent-hooks",
+    "cross-harness",
     "design-md",
     "design-system",
+    "html-generator",
+    "html-artifact",
+    "dashboard",
+    "cli-tool",
+    "developer-tools",
+    "python",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
