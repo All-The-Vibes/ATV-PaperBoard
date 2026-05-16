@@ -10,6 +10,13 @@ updates:
     labels:
       - dependencies
       - ci
+    # Bundle all action bumps into a single PR per week instead of
+    # opening one PR per action. Without this, adding a workflow that
+    # uses N actions immediately creates N PRs on the first scan.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Python runtime + dev deps.
   - package-ecosystem: pip

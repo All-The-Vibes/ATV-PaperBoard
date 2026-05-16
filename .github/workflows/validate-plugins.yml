@@ -129,9 +129,16 @@ jobs:
         # Drift between pyproject.toml `project.version` and any
         # plugin.json `version` field is a release-prep footgun. Catch
         # it on PR before it ships.
+        #
+        # Exception: during the dev cycle pyproject is bumped to
+        # `<next>.devN` while plugin manifests stay pinned to the last
+        # *released* version (so marketplace installs show a stable
+        # release, not a dev tag). Only enforce strict parity when
+        # pyproject is itself a release version.
         run: |
           python - <<'PY'
           import json
+          import re
           import sys
           import tomllib
           from pathlib import Path
@@ -139,6 +146,16 @@ jobs:
           REPO = Path(".").resolve()
           py = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
           py_version = py["project"]["version"]
+
+          # PEP 440 pre/dev/post release suffixes. If any of these
+          # appear, we're between releases — skip strict parity.
+          if re.search(r"(?:\.dev|\.post|a|b|rc)\d+$", py_version):
+              print(
+                  f"OK (skipped): pyproject is a pre/dev version "
+                  f"({py_version!r}); manifest parity check only "
+                  "enforced on release versions."
+              )
+              sys.exit(0)
 
           plugin_manifests = [
               REPO / "adapters" / "claude-code" / ".claude-plugin" / "plugin.json",
