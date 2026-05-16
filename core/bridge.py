@@ -11,10 +11,17 @@ Error taxonomy:
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+
+# Strip the "[log] " / "[info] " / "[success] " prefix that consola (used by
+# the @google/design.md CLI) emits when stdout is not a TTY — notably under
+# CI runners like GitHub Actions. Without this strip, callers see e.g.
+# "[log] 0.1.1" instead of "0.1.1".
+_CONSOLA_PREFIX_RE = re.compile(r"^\[(?:log|info|success|warn|debug|trace|ready|start|box)\]\s+")
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -212,4 +219,9 @@ def version() -> str:
         raise BridgeEnvError(
             f"design.md --version exited {result.returncode}: {result.stderr.strip()}"
         )
-    return result.stdout.strip()
+    # consola (the CLI's logger) prepends "[log] " / "[info] " / etc. when
+    # running in non-TTY environments such as GitHub Actions. Strip any
+    # leading "[level] " tag so the returned version is always a clean
+    # semver-ish string regardless of how the CLI was invoked.
+    raw = result.stdout.strip()
+    return _CONSOLA_PREFIX_RE.sub("", raw).strip()
