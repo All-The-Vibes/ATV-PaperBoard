@@ -37,7 +37,7 @@
     --glow-cyan: rgba(34,211,238,0.10);
     --glow-amber: rgba(241,177,59,0.06);
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-fast: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-fast: cubic-bezier(0.23, 1, 0.32, 1);
     --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
     --font-body: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: "JetBrains Mono", "Geist Mono", "SF Mono", Menlo, Consolas, monospace;
@@ -54,11 +54,10 @@
     line-height: 1.55;
     letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    text-rendering: auto;
     background-image:
       radial-gradient(ellipse 80% 50% at 50% -10%, var(--glow-amber), transparent 60%),
       radial-gradient(ellipse 60% 40% at 100% 100%, rgba(113,112,255,0.05), transparent 60%);
-    background-attachment: fixed;
   }
 
   .mono { font-family: var(--font-mono); font-feature-settings: "tnum", "ss01"; }
@@ -66,8 +65,12 @@
   .small { font-size: 11.5px; }
   .muted { color: var(--text-3); }
   .dim { color: var(--text-4); }
-  a { color: var(--text-1); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: border-color 180ms var(--ease); }
-  a:hover { border-color: var(--accent); }
+  a { color: var(--text-1); text-decoration: none; border-bottom: 1px solid var(--line-strong); transition: border-color 180ms var(--ease), opacity 60ms ease-out; }
+  @media (hover: hover) and (pointer: fine) {
+    a:hover { border-color: var(--accent); }
+  }
+  a:active { opacity: 0.7; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
   code {
     font-family: "Geist Mono", "JetBrains Mono", monospace;
@@ -83,7 +86,8 @@
   .topbar {
     position: sticky; top: 0; z-index: 50;
     height: 52px;
-    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     background: rgba(8,9,10,0.78);
     border-bottom: 1px solid var(--line);
     display: flex; align-items: center;
@@ -118,7 +122,7 @@
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
 
   /* Hero */
-  .hero { position: relative; padding: 112px 0 80px; overflow: hidden; }
+  .hero { position: relative; padding: 56px 0 48px; overflow: hidden; will-change: transform; }
   .hero::before {
     content: ""; position: absolute; inset: 0;
     background:
@@ -131,23 +135,23 @@
     display: inline-flex; align-items: center; gap: 10px;
     color: var(--text-3); font-family: "Geist Mono", monospace;
     font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.12em;
-    margin-bottom: 36px;
+    margin-bottom: 20px;
   }
-  .hero .eyebrow .bar { width: 28px; height: 1px; background: var(--line-strong); }
+  .hero .eyebrow .bar { width: 28px; height: 1px; background: linear-gradient(90deg, var(--amber), transparent); }
   .hero h1 {
     margin: 0 0 24px;
     font-size: clamp(44px, 6vw, 72px);
     font-weight: 510; letter-spacing: -0.04em; line-height: 1.04;
-    color: var(--text-1); max-width: 22ch;
+    color: var(--text-1); max-width: 18ch;
   }
   .hero h1 .into { color: var(--text-3); }
   .hero .sub {
     color: var(--text-2); font-size: 18px; line-height: 1.55;
-    max-width: 62ch; margin: 0 0 44px;
+    max-width: 48ch; margin: 0 0 28px;
   }
   .hero-meta {
-    display: flex; gap: 32px; flex-wrap: wrap;
-    padding-top: 22px; border-top: 1px solid var(--line);
+    display: flex; gap: 24px; flex-wrap: wrap;
+    padding-top: 16px; border-top: 1px solid var(--line);
     font-family: "Geist Mono", monospace; font-size: 11.5px;
     color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em;
   }
@@ -155,10 +159,10 @@
   .hero-meta .item .v { color: var(--text-1); font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 510; }
 
   /* Sections */
-  .sec { padding: 88px 0; border-top: 1px solid var(--line); position: relative; }
+  .sec { padding: 48px 0; border-top: 1px solid var(--line); position: relative; }
   .sec.zebra { background: var(--bg-zebra); }
-  .sec.tight { padding: 64px 0; }
-  .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 36px; flex-wrap: wrap; }
+  .sec.tight { padding: 32px 0; }
+  .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .sec-head .num { font-family: "Geist Mono", monospace; font-size: 12px; color: var(--text-4); }
   .sec-head .eyebrow {
     font-family: "Geist Mono", monospace; font-size: 11.5px;
@@ -173,7 +177,7 @@
     padding: 3px 11px; font-family: "Geist Mono", monospace;
     font-size: 11px; color: var(--text-3); align-self: center;
   }
-  .sec-lede { color: var(--text-2); font-size: 17px; max-width: 68ch; margin: -8px 0 36px; line-height: 1.55; }
+  .sec-lede { color: var(--text-2); font-size: 17px; max-width: 68ch; margin: -4px 0 24px; line-height: 1.55; }
 
   /* Stack list */
   .stack-list { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
@@ -181,10 +185,13 @@
     display: grid; grid-template-columns: 280px 1fr 1.1fr;
     gap: 24px; padding: 18px 22px;
     border-bottom: 1px solid var(--line);
-    align-items: start; transition: background 180ms var(--ease);
+    align-items: start; transition: background 180ms var(--ease), transform 120ms ease-out;
   }
   .stack-row:last-child { border-bottom: 0; }
-  .stack-row:hover { background: rgba(255,255,255,0.02); }
+  @media (hover: hover) and (pointer: fine) {
+    .stack-row:hover { background: rgba(255,255,255,0.02); }
+  }
+  .stack-row:active { transform: scale(0.997); }
   .stack-name { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
   .stack-name .mono { font-size: 13px; color: var(--text-1); }
   .stack-tag {
@@ -203,10 +210,13 @@
     display: grid; grid-template-columns: 220px 1fr 1.6fr 90px;
     gap: 20px; padding: 16px 22px;
     border-bottom: 1px solid var(--line);
-    align-items: center; transition: background 180ms var(--ease);
+    align-items: center; transition: background 180ms var(--ease), transform 120ms ease-out;
   }
   .dep-row:last-child { border-bottom: 0; }
-  .dep-row:hover { background: rgba(255,255,255,0.02); }
+  @media (hover: hover) and (pointer: fine) {
+    .dep-row:hover { background: rgba(255,255,255,0.02); }
+  }
+  .dep-row:active { transform: scale(0.997); }
   .dep-col-name { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .dep-name { font-size: 13px; color: var(--text-1); }
   .dep-tag {
@@ -226,10 +236,13 @@
   .q-row {
     display: grid; grid-template-columns: 64px 1fr;
     padding: 22px 24px; border-bottom: 1px solid var(--line);
-    align-items: start; transition: background 180ms var(--ease);
+    align-items: start; transition: background 180ms var(--ease), transform 120ms ease-out;
   }
   .q-row:last-child { border-bottom: 0; }
-  .q-row:hover { background: rgba(255,255,255,0.02); }
+  @media (hover: hover) and (pointer: fine) {
+    .q-row:hover { background: rgba(255,255,255,0.02); }
+  }
+  .q-row:active { transform: scale(0.997); }
   .q-num { color: var(--text-4); font-size: 12px; padding-top: 2px; }
   .q-body h4 { margin: 0 0 6px; font-size: 14px; font-weight: 510; color: var(--text-1); }
   .q-body p { margin: 0; font-size: 14px; color: var(--text-2); max-width: 70ch; }
@@ -247,8 +260,10 @@
     width: 7px; height: 7px; border-radius: 50%;
     background: var(--surface-3); border: 1px solid var(--line-strong);
   }
-  .step-row:hover { border-left-color: var(--line-bright); }
-  .step-row:hover::before { background: var(--accent); border-color: var(--accent); }
+  @media (hover: hover) and (pointer: fine) {
+    .step-row:hover { border-left-color: var(--line-bright); }
+    .step-row:hover::before { background: var(--accent); border-color: var(--accent); }
+  }
   .step-num { font-size: 12px; color: var(--text-4); padding-top: 2px; }
   .step-title { font-size: 14.5px; font-weight: 510; color: var(--text-1); margin-bottom: 4px; }
   .step-desc { font-size: 13.5px; max-width: 64ch; line-height: 1.55; color: var(--text-3); }
@@ -259,7 +274,7 @@
   .code-dots { display: flex; gap: 6px; }
   .code-dots i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; opacity: 0.85; }
   .code-lang { font-family: "Geist Mono", monospace; font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-left: auto; }
-  pre.code { margin: 0; padding: 20px 24px; overflow-x: auto; font-family: "Geist Mono", "JetBrains Mono", Menlo, monospace; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  pre.code { margin: 0; padding: 16px 20px; overflow-x: auto; font-family: "Geist Mono", "JetBrains Mono", Menlo, monospace; font-size: 13px; line-height: 1.6; color: var(--text-2); }
 
   /* Props table */
   table.props { width: 100%; border-collapse: collapse; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
@@ -295,12 +310,12 @@
 
   /* Checklist */
   .check-list { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
-  .chk { display: flex; gap: 12px; align-items: flex-start; padding: 13px 22px; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--text-2); }
+  .chk { display: flex; gap: 12px; align-items: flex-start; padding: 10px 18px; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--text-2); }
   .chk:last-child { border-bottom: 0; }
   .chk-mark { color: var(--text-4); font-family: "Geist Mono", monospace; margin-top: 1px; width: 12px; }
 
   /* Callout */
-  .callout { margin-top: 24px; background: var(--accent-bg); border: 1px solid var(--accent-line); border-radius: 12px; padding: 22px 26px; }
+  .callout { margin-top: 24px; background: var(--accent-bg); border: 1px solid var(--accent-line); border-radius: 12px; padding: 18px 22px; }
   .callout h4 { margin: 0 0 10px; font-size: 14px; color: var(--text-1); font-weight: 510; }
   .callout ul { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 14px; }
   .callout li { margin: 5px 0; }
@@ -320,7 +335,7 @@
   .file-path::before { content: ""; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); }
 
   /* Foot */
-  footer.foot { border-top: 1px solid var(--line); padding: 48px 0 64px; color: var(--text-3); font-size: 12.5px; }
+  footer.foot { border-top: 1px solid var(--line); padding: 32px 0 40px; color: var(--text-3); font-size: 12.5px; }
   footer.foot .row { display: flex; gap: 28px; flex-wrap: wrap; align-items: baseline; }
   footer.foot .row .right { margin-left: auto; }
   footer.foot .mono { color: var(--text-4); font-size: 11.5px; }
@@ -331,8 +346,9 @@
      Editorial bar: Instrument Serif display, Inter body, JetBrains Mono code,
      amber italic accent. */
   .prose {
-    padding: 72px 0 24px;
-    max-width: 880px;
+    padding: 40px 0 24px;
+    max-width: 720px;
+    margin: 0 auto;
     counter-reset: prose-section;
   }
   .prose > *:first-child { margin-top: 0; }
@@ -353,8 +369,8 @@
   }
   /* Lede = the first paragraph after the hero. Larger, dim, bottom-divided. */
   .prose > h1:first-child + p {
-    margin: 0 0 56px;
-    padding: 0 0 56px;
+    margin: 0 0 32px;
+    padding: 0 0 32px;
     font-family: var(--font-display);
     font-style: italic;
     font-size: clamp(22px, 2.2vw, 27px);
@@ -384,8 +400,8 @@
      + Instrument Serif display. */
   .prose h2 {
     counter-increment: prose-section;
-    margin: 88px 0 22px;
-    padding-top: 40px;
+    margin: 48px 0 16px;
+    padding-top: 24px;
     border-top: 1px solid var(--line);
     font-family: var(--font-display);
     font-size: clamp(34px, 3.6vw, 44px);
@@ -404,7 +420,7 @@
   .prose h2 em { font-style: italic; color: var(--amber); font-weight: 400; }
 
   .prose h3 {
-    margin: 44px 0 14px;
+    margin: 32px 0 10px;
     font-size: 20px; font-weight: 510; letter-spacing: -0.012em; line-height: 1.3;
     color: var(--text-1);
   }
@@ -419,12 +435,10 @@
   .prose p {
     margin: 16px 0;
     font-size: 15.5px; line-height: 1.68; color: var(--text-2);
-    max-width: 68ch;
   }
   .prose ul, .prose ol {
     margin: 16px 0; padding-left: 24px;
     font-size: 15.5px; line-height: 1.68; color: var(--text-2);
-    max-width: 68ch;
   }
   .prose li { margin: 7px 0; }
   .prose li::marker { color: var(--amber); font-family: var(--font-mono); font-size: 13px; }
@@ -435,7 +449,11 @@
     border-bottom: 1px solid var(--accent-line);
     transition: border-color 180ms var(--ease);
   }
-  .prose a:hover { border-color: var(--accent); }
+  @media (hover: hover) and (pointer: fine) {
+    .prose a:hover { border-color: var(--accent); }
+  }
+  .prose a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  .prose a:active { opacity: 0.7; transition: opacity 60ms ease-out; }
   .prose strong { color: var(--text-1); font-weight: 600; }
   /* Italic = the editorial signature. Inline italics pick up the amber accent. */
   .prose em {
@@ -455,7 +473,7 @@
 
   .prose hr {
     border: 0; border-top: 1px solid var(--line);
-    margin: 56px 0;
+    margin: 40px 0;
   }
 
   /* Blockquote = pull-quote with serif italic and amber accent rail. */
@@ -568,7 +586,9 @@
   }
   .prose table.md td:last-child { border-right: 0; }
   .prose table.md tr:last-child td { border-bottom: 0; }
-  .prose table.md tr:hover td { background: rgba(255,255,255,0.015); }
+  @media (hover: hover) and (pointer: fine) {
+    .prose table.md tr:hover td { background: rgba(255,255,255,0.015); }
+  }
   .prose table.md code { font-size: 12.5px; padding: 1px 5px; }
   .prose table.md strong { color: var(--text-1); }
 
@@ -576,6 +596,30 @@
     max-width: 100%; height: auto;
     border-radius: 8px; margin: 18px 0;
     border: 1px solid var(--line);
+  }
+
+  /* Scope expensive font rendering to display sizes only */
+  .display, .hero h1, .sec-head h2, .prose > h1:first-child, .prose h2, .prose blockquote {
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Initial fade-in on prose hero (modern browsers only) */
+  @supports (animation-timeline: scroll()) {
+    .prose > h1:first-child {
+      opacity: 1;
+      transition: opacity 400ms ease-out;
+      @starting-style { opacity: 0; }
+    }
+  }
+
+  /* Accessibility: respect user reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
   }
 </style>
 </head>

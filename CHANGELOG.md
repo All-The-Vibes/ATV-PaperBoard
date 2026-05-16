@@ -10,6 +10,38 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+### Changed
+- Tightened editorial spacing across `atv-tier.html.j2`:
+  - Hero padding `112px/80px` → `56px/48px`; eyebrow margin `36px` → `20px`.
+  - Section padding `88px` → `48px` (`.sec.tight` `64px` → `32px`).
+  - Prose `<h2>` rhythm `88px/40px` → `48px/24px`; `<h3>` `44px` → `32px`.
+  - Prose container narrowed from `880px` to `720px`, now centered (`margin: 0 auto`); dropped redundant `max-width: 68ch` from `<p>` and `<ul>/<ol>` so the column width is the single source of truth.
+  - Prose lede divider `56px/56px` → `32px/32px`; `<hr>` `56px` → `40px`.
+  - Footer / checklist / callout / `<pre>` padding tightened for higher reading density.
+- Hero h1 `max-width` `22ch` → `18ch`; hero sub-lede `62ch/44px` → `48ch/28px`; hero-meta `gap 32/padding-top 22` → `24/16`.
+- Eyebrow rule bar is now an amber linear-gradient (`var(--amber) → transparent`) instead of a flat `--line-strong` solid.
+- `--ease-fast` upgraded from Material's `cubic-bezier(0.4, 0, 0.2, 1)` to Emil-strong `cubic-bezier(0.23, 1, 0.32, 1)`.
+- `gallery.html.j2` rewritten to match the dark editorial design system:
+  - Dropped Pico CSS; uses the same `:root` tokens, Google Fonts (Inter + Instrument Serif + JetBrains Mono), and `data-theme="atv"` as the doc template.
+  - Sticky topbar matches the doc topbar (52px, `backdrop-filter: blur(10px)`, gradient brand glyph, amber-dot status pill).
+  - Editorial hero with mono eyebrow, serif h1 with amber italic accent, mono meta strip.
+  - Card grid with `--surface` background, amber tier badges, accent-line "Open artifact →" links.
+
+### Added
+- Accessibility scaffolding in `atv-tier.html.j2` and `gallery.html.j2`:
+  - `@media (prefers-reduced-motion: reduce)` block neutralises transitions/animations for users with vestibular sensitivity.
+  - All `:hover` rules gated behind `@media (hover: hover) and (pointer: fine)` so touch devices no longer get sticky hover states.
+  - `:focus-visible` rings on all links (`outline: 2px solid var(--accent); outline-offset: 3px`).
+- Press-feedback on interactive elements:
+  - `a:active { opacity: 0.7; transition-duration: 60ms; }` across both templates.
+  - `.stack-row / .dep-row / .q-row:active { transform: scale(0.997); }` for card rows.
+- `@supports (animation-timeline: scroll())` block with `@starting-style { opacity: 0 }` for a subtle initial fade-in on the prose hero `<h1>` (modern browsers only; legacy browsers see instant text).
+
+### Fixed
+- Long-document performance: dropped body-level `text-rendering: optimizeLegibility` and `background-attachment: fixed`. `optimizeLegibility` now scoped to display sizes (`.display, hero h1, sec-head h2, prose hero/h2, blockquote`). On the 1 MB+ unsloth doc this measurably improves scroll FPS.
+- Topbar Safari compatibility: added `-webkit-backdrop-filter` alongside `backdrop-filter`; reduced blur from `14px` to `10px` to lower per-frame paint cost on iOS Safari.
+- `gallery.html.j2` cohesion break: gallery was light-themed (Pico's `data-theme="light"` won specificity) even when dark token overrides were injected. Gallery now visually continues from the docs it indexes.
+
 ## [0.1.3] — 2026-05-16
 
 ### Added
