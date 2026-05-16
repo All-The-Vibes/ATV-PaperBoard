@@ -124,5 +124,5 @@ removed. Delete that directory manually to reclaim disk.
 - [Copilot CLI plugins overview](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-cli-plugins)
 - [Custom agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)
 - [Hooks reference (payload schemas + exit codes)](https://docs.github.com/en/copilot/reference/hooks-reference)
+- [Use hooks (how-to)](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/use-hooks)
 - [CLI config directory reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference)
-- SPEC addendum: [`SPEC-addendum-2026-05-16-copilot-cli.md`](../../SPEC-addendum-2026-05-16-copilot-cli.md)

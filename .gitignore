@@ -44,6 +44,10 @@ teaser/
 # Release-proof harness — local-only validation artifacts, not part of the published repo
 _release-proof/
 
+# Spec docs — kept locally as internal reasoning record; not part of the published repo.
+# All user-facing details live in README.md.
+SPEC*.md
+
 # Sub-agent worktree scratch (created by Agent tool isolation mode)
 .claude/worktrees/
 
