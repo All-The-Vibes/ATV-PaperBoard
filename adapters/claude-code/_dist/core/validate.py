@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # ── Data types ────────────────────────────────────────────────────────────────
 
 
@@ -58,7 +57,7 @@ def validate_all(directory: Path) -> list[ValidationResult]:
         except Exception:  # noqa: BLE001
             meta = {}
         slug = meta.get("slug") or meta_file.stem.replace(".meta", "")
-        harness = meta.get("harness", "standalone")
+        meta.get("harness", "standalone")
         # Validate using the directory directly (bypass harness path resolution).
         html_path = directory / f"{slug}.html"
         design_path = directory / f"{slug}.DESIGN.md"

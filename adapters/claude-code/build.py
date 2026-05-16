@@ -78,7 +78,7 @@ def main() -> int:
         (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    print(f"  [copy] pyproject.toml → pyproject.toml")
+    print("  [copy] pyproject.toml → pyproject.toml")
 
     print(f"\nDone. Dist at: {DIST_DIR}")
     return 0

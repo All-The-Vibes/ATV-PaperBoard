@@ -16,7 +16,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.bridge import spec, version
+from core.bridge import spec
 
 SNAPSHOT_PATH = Path(__file__).parent / "fixtures" / "spec_v0.1.1.json"
 

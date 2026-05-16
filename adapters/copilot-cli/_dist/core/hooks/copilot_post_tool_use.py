@@ -26,8 +26,9 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Mapping
 from pathlib import Path
-from typing import IO, Any, Mapping
+from typing import IO, Any
 
 # Keys that ``create`` / ``edit`` / future write tools may use for the target
 # path. Probed in order; first non-empty wins. Kept defensive because the

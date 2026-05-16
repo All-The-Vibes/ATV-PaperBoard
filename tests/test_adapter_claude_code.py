@@ -10,12 +10,8 @@ Regression tests for adapters/claude-code/:
 from __future__ import annotations
 
 import json
-import os
 import sys
-import time
 from pathlib import Path
-
-import pytest
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -200,8 +196,9 @@ class TestHookHeuristic:
 
     def test_self_recursion_guard(self, tmp_path, monkeypatch):
         """Path under artifact_dir → skip (exit 0 silently)."""
-        from core.cli import _cmd_detect_artifact_candidate, _resolve_artifact_dir
         import argparse
+
+        from core.cli import _cmd_detect_artifact_candidate
 
         # Point artifact dir to tmp_path
         monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path))
@@ -219,8 +216,9 @@ class TestHookHeuristic:
 
     def test_readme_path_skiplist(self, tmp_path, monkeypatch, capsys):
         """*.md under README* prefix → skip."""
-        from core.cli import _cmd_detect_artifact_candidate
         import argparse
+
+        from core.cli import _cmd_detect_artifact_candidate
 
         monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(tmp_path / "data"))
 
@@ -228,7 +226,7 @@ class TestHookHeuristic:
         readme.write_text(STATUS_DASHBOARD_MD)  # has status table, but path should skip
 
         args = argparse.Namespace(tool_output=str(readme))
-        result = _cmd_detect_artifact_candidate(args, "standalone")
+        _cmd_detect_artifact_candidate(args, "standalone")
         captured = capsys.readouterr()
         # Should be skipped due to README* path prefix
         assert "[atv-paperboard]" not in captured.out

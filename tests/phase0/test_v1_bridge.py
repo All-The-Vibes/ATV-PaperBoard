@@ -9,13 +9,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 # Allow imports from repo root
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from core.bridge import export, lint, spec, version
-
+from core.bridge import export, lint, spec
 
 MINIMAL_FIXTURE = (
     Path(__file__).parent.parent / "fixtures" / "compliant" / "minimal.DESIGN.md"

@@ -5,9 +5,7 @@ import datetime
 import time
 from pathlib import Path
 
-import pytest
 import yaml
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -89,8 +87,8 @@ def test_gallery_no_design_md_emitted(tmp_path):
 
 def test_gallery_auto_regen_after_render(tmp_path):
     """After render_artifact, gallery.html should be updated (via CLI auto-regen)."""
-    from core.render import render_artifact
     from core.gallery import regenerate_gallery
+    from core.render import render_artifact
 
     art_dir = tmp_path / "paperboard-artifacts"
     art_dir.mkdir()

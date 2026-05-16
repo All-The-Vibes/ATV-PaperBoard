@@ -14,9 +14,7 @@ Every command resolves harness via detect.detect_harness() first.
 from __future__ import annotations
 
 import argparse
-import json
 import os
-import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -197,8 +195,8 @@ def _cmd_validate(args: argparse.Namespace, harness: str) -> int:
 
 
 def _cmd_regenerate(args: argparse.Namespace, harness: str) -> int:
-    from core.validate import validate_artifact  # noqa: PLC0415
     from core import regenerate as _regen  # noqa: PLC0415
+    from core.validate import validate_artifact  # noqa: PLC0415
 
     art_dir = Path(args.output_dir) if args.output_dir else None
     # Validate current slug first

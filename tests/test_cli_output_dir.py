@@ -12,7 +12,6 @@ import pytest
 
 from core.cli import main as cli_main
 
-
 # ── Fixtures ──���───────────────────────────────────────────────────────────────
 
 
@@ -98,7 +97,8 @@ def test_gallery_cmd_with_output_dir(input_file: Path, output_dir: Path) -> None
     """gallery --output-dir <tmp> should regenerate against that dir."""
     slug = _render_to(input_file, output_dir)
 
-    import io, sys  # noqa: E401
+    import io  # noqa: E401
+    import sys
     buf = io.StringIO()
     old_stdout = sys.stdout
     sys.stdout = buf

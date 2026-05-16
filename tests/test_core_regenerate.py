@@ -11,11 +11,9 @@ import tempfile
 import unittest.mock as mock
 from pathlib import Path
 
-import pytest
 import yaml
 
 from core.validate import ValidationResult
-
 
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
 DEFAULT_DESIGN = Path(__file__).parent.parent / "core" / "designs" / "paperboard.DESIGN.md"
@@ -79,8 +77,6 @@ def test_regenerate_step1_switches_tier():
 
         rendered_slugs: list[str] = []
         rendered_tiers: list[str] = []
-
-        original_render = __import__("core.render", fromlist=["render_artifact"]).render_artifact
 
         def mock_render(input_data, design_path, tier, output_dir):
             rendered_tiers.append(tier)

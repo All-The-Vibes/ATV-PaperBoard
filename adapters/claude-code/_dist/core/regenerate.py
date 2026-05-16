@@ -15,7 +15,6 @@ from typing import Any
 
 from core.validate import ValidationResult
 
-
 _DEFAULT_DESIGN = Path(__file__).parent / "designs" / "paperboard.DESIGN.md"
 
 # Keys considered "optional" in input_data — dropped in Step 2
@@ -137,8 +136,8 @@ def _load_original_meta(slug: str, artifact_dir: Path | None = None) -> dict[str
 def _candidate_dirs() -> list[Path]:
     dirs = [Path.cwd() / "paperboard-artifacts"]
     try:
-        from core import persist as _persist  # noqa: PLC0415
         from core import detect as _detect  # noqa: PLC0415
+        from core import persist as _persist  # noqa: PLC0415
 
         harness = _detect.detect_harness()
         dirs.append(_persist.artifact_dir(harness))

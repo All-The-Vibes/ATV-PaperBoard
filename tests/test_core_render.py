@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"

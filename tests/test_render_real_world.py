@@ -109,7 +109,11 @@ def test_meta_lint_passed_with_info_only():
     # If bridge is available, lint_passed should be True (info findings are non-blocking).
     # If bridge is not available, lint_passed is False by design — skip assertion.
     try:
-        from core import bridge as _bridge  # noqa: PLC0415
+        from core import (
+            bridge as _bridge,  # noqa: F401  (import-only probe for bridge availability)
+        )
+
+        assert _bridge is not None
         assert meta["lint_passed"] is True, f"lint_passed was False; meta={meta}"
     except ImportError:
         pytest.skip("core.bridge not available; skipping lint_passed assertion")

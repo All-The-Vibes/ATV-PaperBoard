@@ -1,0 +1,46 @@
+version: 2
+updates:
+  # Keep GitHub Actions versions current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+
+  # Python runtime + dev deps.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - python
+    # Group patch updates together so the inbox doesn't fill up.
+    groups:
+      python-patch:
+        update-types: [patch]
+
+  # The pinned Node bridge — @google/design.md.
+  # Major bumps need manual review; auto-PR them but leave the merge
+  # decision to a human (see CHANGELOG.md "Migration plan when
+  # @google/design.md 0.2 ships").
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - npm
+    ignore:
+      # Don't auto-bump major versions of the bridge; major bumps may
+      # require regenerating designs/paperboard.DESIGN.md.
+      - dependency-name: "@google/design.md"
+        update-types: ["version-update:semver-major"]

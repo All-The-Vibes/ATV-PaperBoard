@@ -1,0 +1,186 @@
+name: Validate plugin manifests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".claude-plugin/**"
+      - ".github/plugin/**"
+      - "adapters/**"
+      - "core/**"
+      - "skills/**"
+      - "pyproject.toml"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".claude-plugin/**"
+      - ".github/plugin/**"
+      - "adapters/**"
+      - "core/**"
+      - "skills/**"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+concurrency:
+  group: validate-plugins-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate marketplaces, plugin manifests, and _dist freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate marketplace.json schemas + plugin sources exist
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          REPO = Path(".").resolve()
+          errors: list[str] = []
+
+          for mf_path in [
+              REPO / ".claude-plugin" / "marketplace.json",
+              REPO / ".github" / "plugin" / "marketplace.json",
+          ]:
+              if not mf_path.exists():
+                  errors.append(f"missing: {mf_path}")
+                  continue
+              try:
+                  mf = json.loads(mf_path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as e:
+                  errors.append(f"{mf_path}: invalid JSON ({e})")
+                  continue
+              for key in ("name", "owner", "plugins"):
+                  if key not in mf:
+                      errors.append(f"{mf_path}: missing required key '{key}'")
+              for i, plugin in enumerate(mf.get("plugins") or []):
+                  for key in ("name", "source"):
+                      if key not in plugin:
+                          errors.append(f"{mf_path}: plugins[{i}] missing '{key}'")
+                  src = plugin.get("source", "")
+                  if isinstance(src, str) and src.startswith("./"):
+                      src_path = (REPO / src.removeprefix("./")).resolve()
+                      if not src_path.is_dir():
+                          errors.append(
+                              f"{mf_path}: plugins[{i}].source '{src}' "
+                              f"does not exist or is not a directory"
+                          )
+
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}", file=sys.stderr)
+              sys.exit(1)
+          print("OK: marketplace manifests valid; plugin sources exist.")
+          PY
+
+      - name: Verify plugin _dist contents
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          REPO = Path(".").resolve()
+          errors: list[str] = []
+
+          # Claude Code _dist must contain its plugin manifest + hook
+          cc = REPO / "adapters" / "claude-code" / "_dist"
+          required_cc = [
+              cc / ".claude-plugin" / "plugin.json",
+              cc / "hooks" / "hooks.json",
+              cc / "agents",
+              cc / "skills",
+          ]
+          for p in required_cc:
+              if not p.exists():
+                  errors.append(f"claude-code _dist missing: {p.relative_to(REPO)}")
+
+          # Copilot CLI _dist must contain its plugin manifest + hook
+          co = REPO / "adapters" / "copilot-cli" / "_dist"
+          required_co = [
+              co / "plugin.json",
+              co / "hooks.json",
+              co / "agents",
+              co / "skills",
+          ]
+          for p in required_co:
+              if not p.exists():
+                  errors.append(f"copilot-cli _dist missing: {p.relative_to(REPO)}")
+
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}", file=sys.stderr)
+              sys.exit(1)
+          print("OK: both _dist trees contain required plugin files.")
+          PY
+
+      - name: Verify plugin manifest versions match pyproject
+        # Drift between pyproject.toml `project.version` and any
+        # plugin.json `version` field is a release-prep footgun. Catch
+        # it on PR before it ships.
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          REPO = Path(".").resolve()
+          py = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+          py_version = py["project"]["version"]
+
+          plugin_manifests = [
+              REPO / "adapters" / "claude-code" / ".claude-plugin" / "plugin.json",
+              REPO / "adapters" / "copilot-cli" / "plugin.json",
+              REPO / ".claude-plugin" / "marketplace.json",
+              REPO / ".github" / "plugin" / "marketplace.json",
+          ]
+          errors: list[str] = []
+          for mf in plugin_manifests:
+              data = json.loads(mf.read_text(encoding="utf-8"))
+              # marketplace.json has a nested plugins[].version; plugin.json has top-level version.
+              versions: list[tuple[str, str]] = []
+              if "version" in data:
+                  versions.append((str(mf.relative_to(REPO)), data["version"]))
+              for i, plugin in enumerate(data.get("plugins") or []):
+                  if "version" in plugin:
+                      versions.append((f"{mf.relative_to(REPO)}#plugins[{i}]", plugin["version"]))
+              for label, v in versions:
+                  if v != py_version:
+                      errors.append(
+                          f"version drift: {label} = '{v}' but pyproject = '{py_version}'"
+                      )
+          if errors:
+              for e in errors:
+                  print(f"::error::{e}", file=sys.stderr)
+              sys.exit(1)
+          print(f"OK: all plugin manifest versions match pyproject ({py_version}).")
+          PY
+
+      - name: Verify _dist is fresh (rebuild and check for diff)
+        # If someone edits adapters/<harness>/{plugin.json,hooks.json,agents/...}
+        # but forgets to re-run build.py, the committed _dist tree goes
+        # stale and marketplace users get the OLD plugin. Rebuild and
+        # fail if anything would change.
+        run: |
+          set -euo pipefail
+          export PYTHONIOENCODING=utf-8
+          python adapters/claude-code/build.py
+          python adapters/copilot-cli/build.py
+          if ! git diff --quiet -- adapters/*/_dist/; then
+            echo "::error::adapters/*/_dist/ is stale. Run 'python adapters/claude-code/build.py' and 'python adapters/copilot-cli/build.py', then commit the diff."
+            git --no-pager diff --stat -- adapters/*/_dist/
+            exit 1
+          fi
+          echo "OK: _dist trees are up to date with adapter sources."

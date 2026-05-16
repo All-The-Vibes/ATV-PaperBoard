@@ -307,7 +307,7 @@ def _export_from_design_yaml(design_path: Path) -> dict[str, Any]:
                 # Split comma-separated list into the array form _flatten_tailwind expects.
                 export["fontFamily"][role_name] = [s.strip().strip('"') for s in ff.split(",")]
             fs = block.get("fontSize")
-            if isinstance(fs, (str, int, float)):
+            if isinstance(fs, str | int | float):
                 size_key = "base" if role_key == "body" else role_key
                 export["fontSize"][size_key] = str(fs)
 
@@ -851,7 +851,7 @@ def _flatten_tailwind(export_dict: dict[str, Any]) -> dict[str, str]:
 
     font_size = export_dict.get("fontSize", {})
     for name, size in font_size.items():
-        value = size[0] if isinstance(size, (list, tuple)) else size
+        value = size[0] if isinstance(size, list | tuple) else size
         flat[f"--font-size-{name}"] = str(value)
         if name in ("base", "DEFAULT"):
             flat["--font-size"] = str(value)

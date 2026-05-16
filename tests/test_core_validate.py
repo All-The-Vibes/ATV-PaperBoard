@@ -8,9 +8,6 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-import pytest
-
-
 MINIMAL_DESIGN = Path(__file__).parent / "fixtures" / "compliant" / "minimal.DESIGN.md"
 
 MINIMAL_INPUT = {
@@ -41,7 +38,7 @@ def _render_to_dir(tmp: Path, input_data: dict | None = None, tier: str = "pico"
 
 def test_validate_clean_artifact_passes():
     """A freshly rendered artifact with no inline color overrides must ACCEPT."""
-    from core.validate import validate_artifact, ValidationResult
+    from core.validate import ValidationResult, validate_artifact
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -62,7 +59,7 @@ def test_validate_clean_artifact_passes():
 
 def test_validate_color_violation_detected():
     """An artifact with an undeclared inline hex color must FAIL with fail_class='color-trace'."""
-    from core.validate import validate_artifact, _extract_design_colors, _extract_inline_colors
+    from core.validate import validate_artifact
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
@@ -85,9 +82,9 @@ def test_validate_color_violation_detected():
 
 def test_validate_environment_fail_on_missing_files():
     """validate_artifact must return fail_class='environment' when files don't exist."""
-    from core.validate import validate_artifact
-
     import unittest.mock as mock
+
+    from core.validate import validate_artifact
     with mock.patch(
         "core.validate._resolve_artifact_dir",
         return_value=Path("/nonexistent/path/nowhere"),

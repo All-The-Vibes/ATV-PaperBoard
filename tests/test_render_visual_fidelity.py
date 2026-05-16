@@ -97,7 +97,7 @@ def _dominant_color(img, x0: int, y0: int, x1: int, y1: int,
 
 
 def _close(a, b, tol: int = 4) -> bool:
-    return all(abs(x - y) <= tol for x, y in zip(a, b))
+    return all(abs(x - y) <= tol for x, y in zip(a, b, strict=False))
 
 
 def _render_and_shot(input_path: Path, out_dir: Path, http_base: str,

@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.detect import detect_harness
 
-
 # ---------------------------------------------------------------------------
 # V3 / V4 — real-session tests (skip in CI / automated runs)
 # ---------------------------------------------------------------------------
