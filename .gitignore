@@ -36,16 +36,13 @@ paperboard-artifacts/
 .atv-paperboard-cache/
 
 # Session/research scratch (kept locally, not committed)
-.omc/state/
-.omc/logs/
-# NB: .omc/research/ IS committed (it's spec-supporting evidence)
+.omc/
 
 # Teaser workstream (separate)
 teaser/
 
-# Sandbox under release-proof is regenerable harness state
-_release-proof/sandbox/
-_release-proof/**/.suggest-cooldown
+# Release-proof harness — local-only validation artifacts, not part of the published repo
+_release-proof/
 
 # Sub-agent worktree scratch (created by Agent tool isolation mode)
 .claude/worktrees/
