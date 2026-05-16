@@ -323,4 +323,8 @@ The 2 skipped tests are real-session gates (V3, V4) that require a live harness 
 
 Apache-2.0. See [LICENSE](LICENSE).
 
+## Contributing
+
+PRs welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for project layout, dev setup, test markers, lint config, branching, commit conventions, recipes for common contributions (new harness adapter, new design starter, new CLI subcommand), and where to file bug reports vs security issues. No CLA — inbound = outbound under Apache-2.0.
+
 

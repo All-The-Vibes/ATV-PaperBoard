@@ -1,69 +1,90 @@
 # Changelog
 
-All notable changes to atv-paperboard are documented in this file. Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/) starting at v0.1.0.
+All notable changes to **atv-paperboard** are documented in this file.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The project is in `0.1.x` alpha — minor versions may introduce additive breaking changes, patch versions are bug-fix-only.
+
+The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadmap lives in [`README.md`](README.md#roadmap), not here.
+
+---
 
 ## [Unreleased]
 
-### Planned for v0.1.2
-- OpenCode adapter (deferred from v0.1.1; 5 breaking defects in SPEC v4 TS plugin require empirical-verification cycle).
-- USPTO TESS clearance on "paperboard" / "atv" IC 009/042.
-- Public release (PyPI + GitHub + Claude Code marketplace PR).
-- Cross-harness artifact aggregation (one gallery showing artifacts from multiple harnesses on one machine).
+### Added
+- **GitHub Copilot CLI adapter** (`adapters/copilot-cli/`) — native plugin (agents, skills, hook). Validated end-to-end against `copilot.exe v1.0.49` inside a fully isolated sandbox (`USERPROFILE` / `HOME` / `COPILOT_HOME` pinned). Hook fires, payload parses, suggestion injects, file lands, `exit=0`.
+- Per-adapter `INSTALL.md` covering local-dev (`--plugin-dir`) and marketplace install flows.
+- 60-second teaser video (`assets/paperboard-teaser.mp4`, 1.4 MB H.264) embedded inline at the top of the README via a `user-attachments` URL so it auto-plays on github.com.
 
-### Planned for v0.2
-- VS Code Chat Participant extension (Copilot in-IDE path).
-- MCP server integration.
-- Full HTML-side token trace (spacing/typography/shadow). v0.1.0 is color-only.
+### Changed
+- **README rewrite.** All public-facing technical content now lives in `README.md`: artifact triple, render tiers (Pico vs daisyUI), auto-detection precedence ladder, per-harness persistence paths, three integration patterns, hook heuristic, three Copilot surfaces disambiguation, Copilot CLI fail-open hook semantics + `additionalContext` channel, explicit non-goals, threat model, full CLI surface.
+
+### Removed
+- Internal spec documents (`SPEC.md`, `SPEC-review-*.md`, `SPEC-addendum-*.md`) are no longer published with the repo. They remain on contributors' local disks as reasoning records but are now gitignored (`SPEC*.md`). All user-facing material was lifted into the README.
+- Local-only directories `_release-proof/` (validation harness output) and `.omc/` (session/research scratch) are gitignored.
+
+### Internal
+- Pinned PR review / repo automation: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer on relevant commits.
+
+---
 
 ## [0.1.1] — 2026-05-15
 
 ### Fixed
-- `_flatten_tailwind()` now unwraps the `{"theme": {"extend": {...}}}` envelope that `@google/design.md export tailwind` returns; previously the nested structure was passed through verbatim, causing the rendered HTML to emit an empty `:root {}` block with no design tokens applied.
+- `core/render.py::_flatten_tailwind()` now unwraps the `{"theme": {"extend": {...}}}` envelope that `@google/design.md export tailwind` returns. Previously the nested structure was passed through verbatim, producing an empty `:root {}` block with no design tokens applied.
 - Added a pure-Python YAML fallback path in `core/render.py` so token injection works when the Node bridge is unavailable (CI environments without `node`, offline use).
 
 ### Added
-- Render-fidelity test: end-to-end sentinel-color check (`#ABCDEF`) verifies that a known token value survives the full export → flatten → CSS-variable injection → HTML render pipeline.
-- Bridge-shape mismatch warning: `core/render.py` now emits a structured warning when the export envelope shape does not match the expected `theme.extend` contract, making future `@google/design.md` schema changes immediately visible rather than silently producing empty tokens.
+- **Render-fidelity test** — end-to-end sentinel-color check (`#ABCDEF`) verifies that a known token value survives the full export → flatten → CSS-variable injection → HTML render pipeline.
+- **Bridge-shape mismatch warning** — `core/render.py` emits a structured warning when the export envelope shape does not match the expected `theme.extend` contract, making future `@google/design.md` schema changes immediately visible instead of silently producing empty tokens.
 
-### Known limitations (carried into v0.1.2)
-- **G3 — workflow glob is not monorepo-safe**: `paperboard-artifacts/**` does not match nested paths in monorepos; `**/paperboard-artifacts/**` is the correct pattern but requires validating against real multi-package repos before shipping.
-- **G4 — no merge-block enforcement**: validate failures are reported but do not block merges; enforcing this requires branch protection rules that vary by org policy and cannot be mandated by the tool itself.
-- **G5 — `@google/design.md` installed globally without integrity check**: `npm install -g @google/design.md@0.1.1` pins by version only; a subresource integrity or lockfile-based install path is deferred until the upstream package exposes stable SRI hashes.
+### Known limitations (still open)
+- **Workflow glob is not monorepo-safe.** `paperboard-artifacts/**` does not match nested paths in monorepos; `**/paperboard-artifacts/**` is the correct pattern but needs validating against real multi-package repos before shipping as the default.
+- **No merge-block enforcement.** `paperboard validate` failures are reported but do not block merges; enforcing this requires branch protection rules that vary by org policy.
+- **`@google/design.md` installed globally without integrity check.** `npm install -g @google/design.md@0.1.1` pins by version only; a lockfile-based install path is deferred until the upstream package exposes stable SRI hashes.
+
+---
 
 ## [0.1.0-preview] — 2026-05-15
 
-Initial private/limited release. Delivered in a single session.
+Initial private/limited release. Three native adapters + one CI recipe, shared Python core, four pillars.
 
 ### Adapters
-- **Claude Code** (native, §2.1 corrected): `.claude-plugin/plugin.json` manifest + `hooks/hooks.json` with corrected outer `"hooks"` wrapper key and timeout unit (seconds, not ms). Regression test covers the SPEC v4 syntax bugs.
-- **Codex CLI** (native, §2.2 corrected): `agents/openai.yaml` with corrected schema (removed non-existent `allowed_tools` field); `~/.codex/config.toml` TOML hook with corrected array-of-tables syntax and `matcher` key. Regression test covers the SPEC v4 TOML bugs.
+- **Claude Code** (native) — `.claude-plugin/plugin.json` manifest + `hooks/hooks.json` with the outer `"hooks"` wrapper key and timeout in **seconds**.
+- **Codex CLI** (native) — `agents/openai.yaml` (no `allowed_tools` field — that key doesn't exist in the documented schema) + `~/.codex/config.toml` TOML hook using array-of-tables syntax and a `matcher` key.
 
 ### Recipe
-- **GitHub Copilot Coding Agent** via `recipes/github-actions/`: `copilot-instructions.md.template` + `workflow.yml.template` + `INSTALL.md`. Copilot has no local plugin path; recipe ships as GitHub Actions templates rather than a 4th adapter.
+- **GitHub Copilot Coding Agent** via `recipes/github-actions/`: `copilot-instructions.md.template` + `workflow.yml.template` + `INSTALL.md`. The Coding Agent has no local plugin path on this surface, so the integration ships as GitHub Actions templates rather than an adapter.
 
 ### Pillars
-- **ENFORCE**: `core/validate.py` — Google CLI lint (`node <bin>/dist/index.js lint --format json`) + HTML-side color-token trace. Severity-aware: lint failures surface `fail-class`. Regeneration retries: same tier → switch tier → fall back to paperboard default.
-- **RENDER**: `core/render.py` — `rows/body_md/body_html` input contract; Pico (cheap) and daisyUI (rich) tier templates via Jinja2; Tailwind token-rename layer bridges `@google/design.md export tailwind` output to Pico's `--pico-*` / daisyUI's `--p` CSS variables.
-- **PERSIST**: `core/persist.py` — harness-aware path resolution; `--output-dir` override propagated across all subcommands (`render`, `validate`, `gallery`, `detect-artifact-candidate`).
-- **COMPOUND**: `core/gallery.py` — auto-gallery-regen triggered after every `render` call; gallery reuses `designs/paperboard.DESIGN.md`; gallery lint passes.
+- **Enforce** (`core/validate.py`) — Google CLI lint (`node <bin>/dist/index.js lint --format json`) + HTML-side color-token trace. Severity-aware: lint failures surface a `fail-class`. Regeneration retries: same tier → switch tier → fall back to the default `paperboard` design.
+- **Render** (`core/render.py`) — `rows / body_md / body_html` input contract; Pico (cheap) and daisyUI (rich) tier templates via Jinja2; Tailwind token-rename layer bridges `@google/design.md export tailwind` output to Pico's `--pico-*` / daisyUI's `--p` CSS variables.
+- **Persist** (`core/persist.py`) — harness-aware path resolution; `--output-dir` override propagated across `render`, `validate`, `gallery`, `detect-artifact-candidate`.
+- **Compound** (`core/gallery.py`) — auto gallery regeneration triggered after every `render` call; gallery reuses `designs/paperboard.DESIGN.md`; the gallery's own lint passes.
 
 ### Designs
 - `designs/paperboard.DESIGN.md` — default (dialed-back neubrutalism).
-- `designs/starters/stripi-inspired.DESIGN.md`, `lin-ear-inspired.DESIGN.md`, `vercel-inspired.DESIGN.md` — 3 brand-inspired starters, all carrying §17 attribution frontmatter (`inspired_by`, `not_affiliated_with`, `source_repo`, `source_commit`, `source_license`, `redistributed_under`). Public-release blocker resolved (`test_starter_attribution.py` passing).
+- `designs/starters/{stripi,lin-ear,vercel}-inspired.DESIGN.md` — three brand-inspired starters, each carrying `attribution:` frontmatter (`inspired_by`, `not_affiliated_with`, `source_repo`, `source_commit`, `source_license`, `redistributed_under`). The starter-attribution lint blocks any starter missing required keys.
 - `designs/glass.DESIGN.md` — premium opt-in tier.
 
-### Empirical SPEC corrections
-- **V2 export format**: `@google/design.md` export emits only `tailwind | dtcg` formats; `css-tailwind` flag does not exist. Token-rename layer in `core/render.py` bridges to Pico/daisyUI CSS variables.
-- **RW-1 to RW-10**: 10 real-world bugs surfaced during Phase 7a by driving the CLI on 3 real-world fixtures (build-status, harness-comparison, bug-hunt) and patched same-session.
+### Empirical corrections discovered at build time
+- `@google/design.md` `export` emits only `tailwind | dtcg` formats — the `css-tailwind` flag does not exist. The token-rename layer in `core/render.py` bridges to Pico/daisyUI.
+- **10 real-world bugs** surfaced during the Phase 7a real-world test pass by driving the CLI on three real-world fixtures (build-status, harness-comparison, bug-hunt) and patched same-session.
 
 ### Tests
-- 93 passing, 2 skipped (real-session V3/V4 gates that require a live harness).
+- 93 passing, 2 skipped (live-harness gates that require a real Claude Code or Codex CLI session — not run in CI).
 - Markers: `phase0`, `harness_claude_code`, `harness_codex`.
 
 ### Dependencies
-- `@google/design.md@0.1.1` (Apache-2.0) exact-pinned; committed `package-lock.json`.
+- `@google/design.md@0.1.1` (Apache-2.0) **exact-pinned**; committed `package-lock.json` is the integrity guard.
 
 ### Migration plan when `@google/design.md` 0.2 ships
-- `tests/test_core_bridge.py` is the schema-drift guard; if it fails post-bump, do not auto-upgrade.
+- `tests/test_core_bridge.py` is the schema-drift guard. If it fails post-bump, do **not** auto-upgrade.
 - Inspect the 0.2 release notes for new mandatory sections; update `designs/paperboard.DESIGN.md` accordingly.
-- Bump the dep, regenerate the lockfile, re-run the Phase 0 verification matrix (SPEC §15) before tagging the patch release.
+- Bump the dep, regenerate the lockfile, re-run the Phase 0 verification matrix before tagging the patch release.
+
+---
+
+[Unreleased]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/All-The-Vibes/ATV-PaperBoard/compare/v0.1.0-preview...v0.1.1
+[0.1.0-preview]: https://github.com/All-The-Vibes/ATV-PaperBoard/releases/tag/v0.1.0-preview
+
