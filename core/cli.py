@@ -8,6 +8,7 @@ Subcommands:
   gallery                — (re)generate the COMPOUND gallery HTML
   detect-artifact-candidate — PostToolUse hook helper (Phase 4 hook heuristics; §16)
   doctor                 — diagnose install
+  schema                 — list / describe the atv-tier section kinds for agent discovery
 
 Every command resolves harness via detect.detect_harness() first.
 """
@@ -114,6 +115,33 @@ def main(argv: list[str] | None = None) -> int:
     # doctor
     sub.add_parser("doctor", help="Diagnose atv-paperboard install")
 
+    # schema — discover the atv-tier sections graph (hero, sec, stack-list, ...)
+    p_schema = sub.add_parser(
+        "schema",
+        help=(
+            "List or describe the atv-tier section kinds (hero, sec, stack-list, ...) "
+            "that JSON input may use under `sections: [...]`."
+        ),
+    )
+    p_schema.add_argument(
+        "--kind",
+        type=str,
+        default=None,
+        help="Print detail for a single kind (e.g. --kind hero). Omit to list all.",
+    )
+    p_schema.add_argument(
+        "--format",
+        type=str,
+        choices=["text", "json"],
+        default="text",
+        help="Output format. 'json' emits a machine-readable dump. Default: text.",
+    )
+    p_schema.add_argument(
+        "--list-kinds",
+        action="store_true",
+        help="Print only the kind names, one per line. Overrides --kind / --format.",
+    )
+
     args = parser.parse_args(argv)
 
     # Resolve harness
@@ -135,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_copilot_post_tool_use(args, harness)
     elif args.command == "doctor":
         return _cmd_doctor(args, harness)
+    elif args.command == "schema":
+        return _cmd_schema(args, harness)
     return 0
 
 
@@ -441,6 +471,77 @@ def _cmd_doctor(_args: argparse.Namespace, harness: str) -> int:
     print(f"  paperboard.DESIGN.md lint: {lint_status}")
 
     return 0
+
+
+def _cmd_schema(args: argparse.Namespace, _harness: str) -> int:
+    """Print the atv-tier section schema for agents and humans.
+
+    Modes:
+      * --list-kinds        — one kind per line (script-friendly).
+      * --kind <name>       — detail for a single kind (description, fields, example).
+      * (default)           — overview of all kinds (one short description each).
+      * --format json       — JSON dump (full schema, or just the requested kind).
+    """
+    from core.section_schema import SECTION_SCHEMA, get_kind, list_kinds  # noqa: PLC0415
+
+    # --list-kinds: terse machine-readable output, ignore --format / --kind.
+    if getattr(args, "list_kinds", False):
+        for kind in list_kinds():
+            print(kind)
+        return 0
+
+    requested_kind = getattr(args, "kind", None)
+    fmt = getattr(args, "format", "text")
+
+    if requested_kind is not None:
+        entry = get_kind(requested_kind)
+        if entry is None:
+            available = ", ".join(list_kinds())
+            print(
+                f"Unknown section kind: {requested_kind!r}. Available: {available}",
+                file=sys.stderr,
+            )
+            return 2
+        if fmt == "json":
+            print(json.dumps({requested_kind: entry}, indent=2))
+            return 0
+        _print_kind_detail(requested_kind, entry)
+        return 0
+
+    if fmt == "json":
+        print(json.dumps(SECTION_SCHEMA, indent=2))
+        return 0
+
+    # Default text overview.
+    print("atv-tier section kinds")
+    print("=" * 22)
+    print()
+    print("Construct JSON like:")
+    print('  { "title": "...", "sections": [ { "kind": "hero", ... }, ... ] }')
+    print("and pipe to: paperboard render --input - --tier atv")
+    print()
+    for kind in list_kinds():
+        entry = SECTION_SCHEMA[kind]
+        print(f"  {kind:<14} {entry['description']}")
+    print()
+    print("Run `paperboard schema --kind <name>` for fields + example JSON for one kind.")
+    print("Run `paperboard schema --format json` for the full machine-readable schema.")
+    return 0
+
+
+def _print_kind_detail(kind: str, entry: dict) -> None:
+    """Pretty-print the detail view for a single section kind."""
+    print(f"kind: {kind}")
+    print("=" * (len(kind) + 6))
+    print()
+    print(entry["description"])
+    print()
+    print("Fields:")
+    for fname, fdesc in entry["fields"].items():
+        print(f"  {fname:<14} {fdesc}")
+    print()
+    print("Example JSON:")
+    print(json.dumps(entry["example"], indent=2))
 
 
 def _bridge_expected_version() -> str:

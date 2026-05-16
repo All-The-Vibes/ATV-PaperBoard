@@ -28,6 +28,9 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
   - Card grid with `--surface` background, amber tier badges, accent-line "Open artifact →" links.
 
 ### Added
+- **`paperboard schema` subcommand** — agent-discoverable documentation of the atv-tier section graph. Without args, lists all 15 kinds (`hero`, `sec`, `stack-list`, `dep-list`, `q-list`, `steps`, `code-shell`, `color-strip`, `fit-row`, `anti`, `checklist`, `callout`, `subhead`, `props-table`, `status-table`) with one-line descriptions. `--kind <name>` shows fields + an example JSON payload for one kind. `--format json` emits a machine-readable dump. `--list-kinds` prints kind names one per line for scripting. Closes the discoverability gap that meant agents installed via the skill defaulted to prose/table output and never exercised the card-tier rendering path.
+- **`core/section_schema.py`** — single source of truth for the section graph schema (description, fields, example per kind). New parametrised test (`test_every_example_is_renderable`) renders each documented example through the real emitter on every CI run, so a doc example that drifts from the emitter is caught immediately. A second test pins that `SECTION_SCHEMA.keys() == _SECTION_EMITTERS.keys()` so adding a new kind without documenting it (or vice versa) fails CI.
+- **`skills/render-artifact/SKILL.md` input-shape guidance.** Adds an "Input shape — pick the richest one that fits" section telling agents the section-graph path is the right answer for almost all structured content, with a runnable example and a pointer to `paperboard schema` for full per-kind detail.
 - Accessibility scaffolding in `atv-tier.html.j2` and `gallery.html.j2`:
   - `@media (prefers-reduced-motion: reduce)` block neutralises transitions/animations for users with vestibular sensitivity.
   - All `:hover` rules gated behind `@media (hover: hover) and (pointer: fine)` so touch devices no longer get sticky hover states.

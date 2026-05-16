@@ -14,6 +14,16 @@ import shutil
 import sys
 from pathlib import Path
 
+# Force UTF-8 stdout on Windows so the unicode arrows in our progress prints
+# (`→`) don't crash with UnicodeEncodeError under cp1252. Same pattern used in
+# `core/cli.py` for the same root cause (Phase 7a RW-1).
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass
+
 REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
 ADAPTER_DIR = Path(__file__).parent.resolve()
 DIST_DIR = ADAPTER_DIR / "_dist"
