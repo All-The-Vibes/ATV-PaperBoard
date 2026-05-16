@@ -45,3 +45,40 @@ teaser/
 
 # Sub-agent worktree scratch (created by Agent tool isolation mode)
 .claude/worktrees/
+
+# Secrets — never commit. Use .env.example for documented templates and add `!.env.example` below if you ever need one tracked.
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# General logs and backup files
+*.log
+*.bak
+*.orig
+*.rej
+
+# Python tooling
+.python-version
+.ipynb_checkpoints/
+
+# Neighboring AI coding tools' artifacts (paperboard runs alongside these)
+**/copilot-session-*.md
+**/copilot-session-*.json
+**/.copilot/
+.aider*
+.cursor/
+.codeium/
+.continue/
+
+# Scratch / temp
+tmp/
+temp/
+*.tmp
+.DS_Store?
+
+# Build/test ephemera not yet covered above
+*.tsbuildinfo
+coverage/
+.nyc_output/
