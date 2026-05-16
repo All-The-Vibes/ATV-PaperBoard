@@ -298,21 +298,6 @@ paperboard doctor                                     # diagnose install
 
 Every command resolves the harness via `detect_harness()` first, then routes to the harness-appropriate persistence path. Browser-open is guarded by `CLAUDE_CODE_REMOTE` / `GITHUB_ACTIONS` / no-display heuristics so headless and remote sessions don't try to pop a tab.
 
-## Development
-
-```bash
-pytest tests/ -q
-# Expected: 130 passed, 2 skipped
-```
-
-The 2 skipped tests are real-session gates (V3, V4) that require a live harness session — not run in CI.
-
-| Marker | Scope |
-|---|---|
-| `phase0` | Cross-harness empirical verification (V1–V6) |
-| `harness_claude_code` | Claude Code adapter |
-| `harness_codex` | Codex CLI adapter |
-
 ## Roadmap
 
 - [CHANGELOG.md](CHANGELOG.md) — version history
