@@ -8,6 +8,10 @@
     "@google/design.md": "0.1.1"
   },
   "scripts": {
-    "verify-bridge": "node node_modules/@google/design.md/dist/index.js --version"
+    "verify-bridge": "node node_modules/@google/design.md/dist/index.js --version",
+    "lint:artifacts": "impeccable detect examples/output"
+  },
+  "devDependencies": {
+    "impeccable": "^2.1.9"
   }
 }

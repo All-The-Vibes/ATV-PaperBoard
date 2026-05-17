@@ -338,6 +338,31 @@ paperboard doctor                                     # diagnose install
 
 Every command resolves the harness via `detect_harness()` first, then routes to the harness-appropriate persistence path. Browser-open is guarded by `CLAUDE_CODE_REMOTE` / `GITHUB_ACTIONS` / no-display heuristics so headless and remote sessions don't try to pop a tab.
 
+## Optional artifact lint
+
+If Node.js is available, paperboard ships an optional anti-pattern lint pass
+backed by [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache 2.0).
+
+```sh
+npm install
+npm run lint:artifacts                       # lints examples/output/
+```
+
+Or invoke the wrappers directly:
+
+```sh
+./scripts/lint-artifacts.sh path/to/*.html   # POSIX
+```
+
+```powershell
+.\scripts\lint-artifacts.ps1 -Targets path\to\file.html   # Windows
+```
+
+The lint runs against generated HTML artifacts after `paperboard render`. The
+core Python CLI does NOT invoke npm — lint is a separate opt-in step. Exit
+code is non-zero if Critical/High issues are found, so CI can gate on it.
+See `core/designs/impeccable-context/` for the underlying doctrine.
+
 ## Roadmap
 
 - [CHANGELOG.md](CHANGELOG.md) — version history
