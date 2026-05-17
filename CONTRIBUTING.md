@@ -52,7 +52,7 @@ atv-paperboard/
 │   └── copilot-cli/
 ├── recipes/             # CI/workflow recipes for harnesses without a local plugin model
 │   └── github-actions/  # Copilot Coding Agent
-├── designs/             # default + starters + glass tier
+├── designs/             # default + starters (atv, paperboard) — glass tier retired 2026-05-16 (impeccable doctrine)
 ├── templates/           # Jinja2 templates: pico-tier, daisy-tier, gallery
 ├── examples/            # 3 real artifact triples + gallery (golden-output reference)
 └── tests/               # pytest; 130 passing, 2 live-harness gates skipped in CI

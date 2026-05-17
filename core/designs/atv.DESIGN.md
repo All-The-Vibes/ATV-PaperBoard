@@ -42,6 +42,8 @@ spacing:
   xl: 88px
 ---
 
+<!-- 2026-05-16: audited against impeccable doctrine (pinned commit 4af581e2); 1 violation corrected: Topbar component prescribed `backdrop-filter: blur(14px)` (glassmorphism) — replaced with opaque-surface + hairline. See core/designs/DESIGN-AUTHORITY.md. -->
+
 # ATV
 
 Dark, dense, technical design language for atv-paperboard artifacts. Built for engineers reading status reports, integration notes, comparison docs, and bug-hunt summaries.
@@ -65,7 +67,7 @@ Inter or Geist body, Geist Mono for code/eyebrows. Heading weight is 510 (betwee
 
 ## Components
 
-- **Topbar**: 52px sticky, `{colors.surface}` with `backdrop-filter: blur(14px)`, brand glyph + breadcrumb + status pill.
+- **Topbar**: 52px sticky, `{colors.surface}` opaque background with a 1px `{colors.border}` bottom hairline; brand glyph + breadcrumb + status pill. (No `backdrop-filter` — flat opaque chrome only.)
 - **Hero**: 112px top padding, mono eyebrow, large `clamp(44px, 6vw, 72px)` headline, 18px subtitle, meta strip with hairline separator.
 - **Section head**: `00 / Eyebrow / H2 / aside-pill`. Numbers in `{colors.muted}` mono.
 - **Stack-list / Dep-list / Q-list**: Bordered list containers with grid rows. No card grids — single-column lists with hairline separators between rows.
@@ -91,7 +93,12 @@ Inter or Geist body, Geist Mono for code/eyebrows. Heading weight is 510 (betwee
 ### Don't
 
 - Don't use drop shadows. Depth comes from blurred ambient gradients on the hero only.
+- Don't use `backdrop-filter: blur` on any surface (glassmorphism is banned — impeccable doctrine).
 - Don't fill large areas with `{colors.accent}` or `{colors.danger}`.
 - Don't introduce a light theme variant inside an atv-tier artifact. Dark is the contract.
 - Don't use more than one accent color per artifact. Indigo or rose, not both.
 - Don't render generic `<table>` markup without an atv-typed wrapper.
+- Don't apply gradient fills to text (`background-clip: text` with a gradient is banned).
+- Don't use a colored `border-left`/`border-right` stripe wider than 1px as a side-stripe on cards or callouts.
+- Don't nest cards inside cards — flatten the hierarchy.
+- Don't decorate with generic AI emoji (✨ 🚀 ⚡ 🎯 etc.); status dots and mono glyphs only.
