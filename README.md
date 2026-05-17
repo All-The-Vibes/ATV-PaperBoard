@@ -4,14 +4,12 @@
 >
 > Drop it into **Claude Code**, **Codex CLI**, or **GitHub Copilot CLI** and your agent stops dumping markdown into the chat — it emits paired `.html` + `.DESIGN.md` artifacts governed by Google's [DESIGN.md spec](https://github.com/google-labs-code/design.md), persisted to disk, and rolled into a compounding gallery you can actually share.
 
-<p align="center">
-  <a href="assets/paperboard-teaser.mp4">
-    <img src="assets/paperboard-teaser-poster.jpg" alt="ATV Paperboard teaser poster" width="720">
-  </a>
-</p>
+<!-- Inline-playable on github.com — keep this URL bare and on its own line. -->
+
+https://github.com/user-attachments/assets/47a1c38e-58ae-4eac-8841-790181c2e3f3
 
 <p align="center">
-  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Open the 60-second teaser</a></strong></sub>
+  <sub><strong><a href="assets/paperboard-teaser.mp4">▶ Fallback: open the 60-second teaser file</a></strong></sub>
 </p>
 
 ---
