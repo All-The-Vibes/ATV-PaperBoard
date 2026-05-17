@@ -10,7 +10,22 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+### Added
+- **Impeccable doctrine integration** (per `SPEC-impeccable-2026-05-16.md`):
+  - Vendored [pbakaus/impeccable](https://github.com/pbakaus/impeccable) `skill/reference/` (7 files: typography, color-and-contrast, spatial-design, motion-design, interaction-design, responsive-design, ux-writing) into `core/designs/impeccable-context/` at pinned commit `4af581e23f17d112d8f9d6b7a5b7ff37823494e1` under Apache-2.0. Per-file provenance lives in `core/designs/impeccable-context/UPSTREAM.md`; root `NOTICE.md` carries third-party attribution.
+  - **`core/designs/DESIGN-AUTHORITY.md`** — new binding doctrine document. Cites impeccable as the methodology authority, enumerates absolute bans (glassmorphism, hairline tracking, decorative gradients, etc.), and codifies the methodology-vs-aesthetic distinction (we import the methodology; tokens stay paperboard's own).
+  - **`skills/impeccable-design/SKILL.md`** — new paperboard-owned skill that loads the doctrine into agent context before any `.DESIGN.md` is authored or modified. Mirrored into `adapters/claude-code/_dist/` and `adapters/copilot-cli/_dist/` via each adapter's `build.py`.
+  - `adapters/codex/AGENTS.md.template` + `adapters/codex/INSTALL.md` updated with a Design authority block (codex is template-only — no `build.py`).
+  - `recipes/github-actions/copilot-instructions.md.template` appended with a Design authority block so the Coding-Agent recipe inherits the same doctrine.
+  - **Optional anti-pattern lint** — `npm run lint:artifacts` runs `npx impeccable detect examples/output` (impeccable@2.1.9, Apache-2.0). Wrappers at `scripts/lint-artifacts.{sh,ps1}`. Exit code 2 on findings; gateable in CI.
+  - **`tests/test_impeccable_integration.py`** — 9 assertions covering vendored files, license/upstream provenance, NOTICE attribution, DESIGN-AUTHORITY presence, glass retirement, glassmorphism-prescription guard, skill source + frontmatter, adapter `_dist` mirroring, and Design-authority blocks in the codex template + Coding-Agent recipe.
+
+### Removed
+- **`core/designs/glass.DESIGN.md`** — the glass tier is hard-retired. Its `backdrop-filter: blur(12px)` prescription violated the impeccable glassmorphism ban. `atv` and `paperboard` remain the only shipped tiers; `core/cli.py --tier` choices unchanged (`pico`/`daisy`/`atv`).
+
 ### Changed
+- **`core/designs/atv.DESIGN.md`** — topbar `backdrop-filter: blur(14px)` replaced with an opaque surface + 1px hairline; audit comment + extended Don't list against impeccable bans.
+- **`core/designs/paperboard.DESIGN.md`** — audit pass clean; Don't list codified against impeccable bans.
 - Tightened editorial spacing across `atv-tier.html.j2`:
   - Hero padding `112px/80px` → `56px/48px`; eyebrow margin `36px` → `20px`.
   - Section padding `88px` → `48px` (`.sec.tight` `64px` → `32px`).
