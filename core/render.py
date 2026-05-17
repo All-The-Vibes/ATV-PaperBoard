@@ -798,7 +798,7 @@ def _md_to_html(md: str) -> str:
     Supports the subset of GitHub-Flavored Markdown needed to render the
     repo's own docs (README, CHANGELOG, CONTRIBUTING, etc.):
 
-    * Headings ``#`` … ``####``
+    * Headings ``#`` … ``######``
     * ``**bold**``, ``*italic*``, `` `inline code` ``
     * ``[link](url)`` and ``![alt](url)`` images
     * Unordered (``-`` / ``*``) and ordered (``1.``) lists
@@ -849,8 +849,36 @@ def _md_to_html(md: str) -> str:
 
     def inline(text: str) -> str:
         # Escape first so user content can't inject HTML; then re-introduce
-        # the small set of markdown-derived tags.
+        # the small set of markdown-derived tags. After escaping we restore
+        # well-known HTML entity sequences (``&amp;mdash;`` → ``&mdash;``)
+        # so authors can write ``&mdash;`` / ``&#8212;`` / ``&#x2014;``
+        # directly in prose and have the browser render the actual glyph.
+        # This is safe because the restored shape is strictly
+        # ``&<named-entity>;`` or ``&#<digits>;`` or ``&#x<hex>;`` — none of
+        # which can encode a tag, attribute, or script.
+        #
+        # Code spans must NOT have their entities restored — backticks mean
+        # "show me the source as typed", which on GitHub means an author who
+        # writes ``\u0060&mdash;\u0060`` sees the literal characters, not the
+        # em-dash glyph. We park code spans behind opaque placeholders before
+        # the entity restoration pass and put them back at the end.
         text = _html_lib.escape(text)
+        # Extract code spans first (operating on already-escaped text so the
+        # captured content is the displayable source). Use a placeholder that
+        # cannot collide with user content because ``\x00`` is escaped away.
+        code_spans: list[str] = []
+
+        def _stash_code(m: re.Match[str]) -> str:
+            code_spans.append(m.group(1))
+            return f"\x00CODE{len(code_spans) - 1}\x00"
+
+        text = re.sub(r"`([^`]+)`", _stash_code, text)
+        # Now restore HTML entities outside code spans.
+        text = re.sub(
+            r"&amp;(#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);",
+            r"&\1;",
+            text,
+        )
         # Images before links (both use ``[ … ](…)`` shape).
         text = re.sub(
             r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)",
@@ -869,13 +897,19 @@ def _md_to_html(md: str) -> str:
         # Underscore italics — require word boundaries so we don't mangle
         # snake_case identifiers like ``opencode_config``.
         text = re.sub(r"(?<![\w_])_([^_\n]+?)_(?![\w_])", r"<em>\1</em>", text)
-        text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
         # Bare URL auto-link (skip ones already inside an ``href``).
         text = re.sub(
             r'(?<!href=")(?<!\()(?<!\[)(?<!src=")(https?://[^\s<>"\']+)',
             r'<a href="\1">\1</a>',
             text,
         )
+        # Restore code spans last so their literal contents (including any
+        # ``&amp;mdash;`` source) are preserved as the author typed them.
+        if code_spans:
+            def _unstash(m: re.Match[str]) -> str:
+                return f"<code>{code_spans[int(m.group(1))]}</code>"
+
+            text = re.sub(r"\x00CODE(\d+)\x00", _unstash, text)
         return text
 
     i = 0
@@ -933,8 +967,8 @@ def _md_to_html(md: str) -> str:
             i += 1
             continue
 
-        # ATX headings ``# `` … ``#### ``
-        heading = re.match(r"^(#{1,4})\s+(.+?)\s*#*\s*$", line)
+        # ATX headings ``# `` … ``###### ``
+        heading = re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", line)
         if heading:
             close_all()
             level = len(heading.group(1))

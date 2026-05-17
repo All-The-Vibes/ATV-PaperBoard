@@ -186,7 +186,7 @@ When you feed a `.md` file or `body_md` JSON field, paperboard runs a small buil
 
 | Feature | Supported | Notes |
 | --- | --- | --- |
-| `# H1` – `#### H4` | ✅ | h5/h6 render as `<h5>`/`<h6>` but no tier styles them by default |
+| `# H1` – `###### H6` | ✅ | All six ATX heading levels render as `<hN>` tags; h5/h6 inherit type without dedicated styles |
 | `**bold**`, `*italic*`, `` `code` `` | ✅ | Inline emphasis + code spans |
 | `[text](url)` | ✅ | Autolinks `<https://...>` also work |
 | `![alt](url)` | ✅ | Images |
