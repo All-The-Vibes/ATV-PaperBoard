@@ -42,6 +42,8 @@ spacing:
   xl: 48px
 ---
 
+<!-- 2026-05-16: audited against impeccable doctrine (pinned commit 4af581e2); no violations found. Existing Don't list explicitly codified against glassmorphism, gradient text, side-stripes, nested cards, and generic-AI-emoji decoration to make compliance load-bearing. See core/designs/DESIGN-AUTHORITY.md. -->
+
 # Paperboard
 
 Default design system for atv-paperboard. The aesthetic is dialed-back neubrutalism on a dark editorial canvas: high-contrast structure, decisive typography, restrained accent, no rainbow palettes or thick drop-shadows.
@@ -58,6 +60,11 @@ Default design system for atv-paperboard. The aesthetic is dialed-back neubrutal
 ## Don't
 
 - Don't use drop-shadows by default. Borders and layered surfaces define depth here.
+- Don't use `backdrop-filter: blur` on any surface — glassmorphism is banned (impeccable doctrine).
+- Don't apply gradient fills to text (`background-clip: text` with a gradient is banned).
+- Don't use a colored `border-left`/`border-right` stripe wider than 1px as a side-stripe on cards, list items, callouts, or alerts.
+- Don't nest cards inside cards. Gallery frame and artifact card are sibling component definitions, not a nesting prescription — flatten the hierarchy in templates.
+- Don't decorate with generic AI emoji (✨ 🚀 ⚡ 🎯 etc.). Use mono glyphs, status dots, and typography for emphasis.
 - Don't mix more than 3 type sizes on one artifact.
 - Don't apply `{colors.accent}` to more than 15 % of visible surface area.
 - Don't use decorative background patterns in the default tier.

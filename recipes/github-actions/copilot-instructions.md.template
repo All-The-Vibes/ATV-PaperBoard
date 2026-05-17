@@ -44,3 +44,26 @@ Run `paperboard gallery` to refresh the local artifact index at `paperboard-arti
 
 `paperboard` auto-detects the harness. No configuration needed when running under
 GitHub Copilot Coding Agent (resolves to `copilot` harness, writes to `paperboard-artifacts/`).
+
+## Design authority
+
+When generating or modifying `.DESIGN.md` files, follow the binding doctrine
+in `core/designs/DESIGN-AUTHORITY.md`. The doctrine is derived from
+[pbakaus/impeccable](https://github.com/pbakaus/impeccable) (Apache 2.0,
+pinned at commit `4af581e23f17d112d8f9d6b7a5b7ff37823494e1`).
+
+Absolute bans (non-negotiable):
+
+- Glassmorphism (`backdrop-filter: blur`, frosted overlays)
+- Gradient text (`-webkit-background-clip: text` with a gradient fill)
+- Side-stripe borders (a colored bar on one edge of a card without semantic meaning)
+- Nested card-in-card patterns
+- Generic AI emoji clichés used decoratively (✨🚀⚡🎯…)
+
+The seven reference dimensions (typography, color-and-contrast, spatial-design,
+motion-design, interaction-design, responsive-design, ux-writing) are vendored
+at `core/designs/impeccable-context/` for offline reference.
+
+Paperboard adopts impeccable's *methodology* (how design tokens are authored
+and enforced), not its *aesthetic* (warm Cormorant Garamond editorial palette).
+Paperboard retains its own cold-dark-technical identity.

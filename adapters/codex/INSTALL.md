@@ -29,6 +29,12 @@ rendering when you produce dashboards, comparison tables, or benchmark results.
 git clone https://github.com/All-The-Vibes/ATV-PaperBoard ~/.agents/skills/atv-paperboard
 ```
 
+The clone also lands the design authority artifacts that the
+`impeccable-design` skill (`skills/impeccable-design/SKILL.md`) reads on
+demand: `core/designs/DESIGN-AUTHORITY.md`, the vendored Apache 2.0 reference
+files under `core/designs/impeccable-context/`, and the repo-root `NOTICE.md`.
+No extra copy step is required for Path A.
+
 **Step 2 — Install Python dependencies:**
 
 ```bash
@@ -75,6 +81,18 @@ cat adapters/codex/AGENTS.md.template >> ~/.codex/AGENTS.md
 
 This tells Codex to invoke `paperboard render --input <path>` on qualifying structured
 output. You still need the `paperboard` CLI on PATH (`pip install atv-paperboard`).
+
+The template includes a `Design authority for .DESIGN.md files` section that
+points at `core/designs/DESIGN-AUTHORITY.md` and the vendored
+`core/designs/impeccable-context/` reference files. Under Path C those files
+are **not** auto-copied — clone the repo separately if you want offline access
+to the doctrine, or fetch them from GitHub on demand:
+
+```bash
+git clone --depth 1 https://github.com/All-The-Vibes/ATV-PaperBoard ~/.codex/atv-paperboard-doctrine
+```
+
+Then update your AGENTS.md paths to point under `~/.codex/atv-paperboard-doctrine/`.
 
 ---
 
