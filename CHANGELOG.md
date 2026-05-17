@@ -10,6 +10,8 @@ The current packaged version is in [`pyproject.toml`](pyproject.toml). The roadm
 
 ## [Unreleased]
 
+## [0.1.4] — 2026-05-16
+
 ### Added
 - **Impeccable doctrine integration** (per `SPEC-impeccable-2026-05-16.md`):
   - Vendored [pbakaus/impeccable](https://github.com/pbakaus/impeccable) `skill/reference/` (7 files: typography, color-and-contrast, spatial-design, motion-design, interaction-design, responsive-design, ux-writing) into `core/designs/impeccable-context/` at pinned commit `4af581e23f17d112d8f9d6b7a5b7ff37823494e1` under Apache-2.0. Per-file provenance lives in `core/designs/impeccable-context/UPSTREAM.md`; root `NOTICE.md` carries third-party attribution.
