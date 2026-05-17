@@ -1,6 +1,6 @@
 {
   "name": "atv-paperboard",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Cross-harness HTML artifact toolkit. Enforce, render, persist, compound.",
   "license": "Apache-2.0",
   "homepage": "https://github.com/All-The-Vibes/ATV-PaperBoard"

@@ -12,7 +12,7 @@
       "name": "atv-paperboard",
       "source": "./adapters/claude-code/_dist",
       "description": "Beautify LLM-generated data artifacts into linted HTML triples. Hooks PostToolUse:Write to detect status tables and suggest `paperboard render`. Ships an artifact-reviewer agent. Fail-open: never blocks tool execution. Requires `pip install atv-paperboard` (Python 3.10+).",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "license": "Apache-2.0",
       "homepage": "https://github.com/All-The-Vibes/ATV-PaperBoard",
       "keywords": [
