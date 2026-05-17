@@ -90,6 +90,14 @@ _DAISY_TOKEN_MAP: dict[str, str] = {
     "--font-size-body": "--font-size",
 }
 
+# The atv tier reads tokens by their semantic names (--color-primary,
+# --color-background, etc.) directly in the template. Use an empty rename map
+# so every flattened key is passed through unchanged. Previously the atv tier
+# fell through to _DAISY_TOKEN_MAP which renamed --color-primary → --p,
+# silently severing the link between the DESIGN.md `colors.primary` token
+# and the rendered --accent CSS variable (Audit 2026-05-16).
+_ATV_TOKEN_MAP: dict[str, str] = {}
+
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
@@ -188,6 +196,22 @@ def render_artifact(
     html_content = template.render(**template_ctx)
     html_path.write_text(html_content, encoding="utf-8")
 
+    # ── Visual-application check ──
+    # If the input carried prose body content (body_md/body_html), verify the
+    # rendered HTML contains CSS rules that actually style semantic elements.
+    # This catches the daisy-template-style failure mode where body_html is
+    # embedded into a container that has no typography rules and the framework
+    # reset (Tailwind preflight) strips default browser styling, producing a
+    # visibly broken render that the schema-only lint cannot detect.
+    visual_findings: list[str] = []
+    if "body_md" in input_data or "body_html" in input_data:
+        if not _has_body_typography(html_content):
+            visual_findings.append(
+                "rendered HTML has no CSS rules styling h1-h6/p/ul/ol/pre/blockquote/code; "
+                "body content will appear unstyled. Add typography rules to the tier template."
+            )
+            lint_passed = False
+
     # Write meta.yaml sidecar
     meta: dict[str, Any] = {
         "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -198,6 +222,8 @@ def render_artifact(
         "slug": slug,
         "lint_passed": lint_passed,
     }
+    if visual_findings:
+        meta["lint_findings"] = visual_findings
     meta_path.write_text(yaml.dump(meta, sort_keys=True), encoding="utf-8")
 
     return {
@@ -229,7 +255,13 @@ def tokens_from_export(export_dict: dict[str, Any], tier: str = "pico") -> dict[
     Returns:
         Flat dict of CSS variable name → value (e.g. ``{'--pico-primary': '#3B82F6'}``).
     """
-    rename_map = _PICO_TOKEN_MAP if tier == "pico" else _DAISY_TOKEN_MAP
+    rename_map: dict[str, str]
+    if tier == "pico":
+        rename_map = _PICO_TOKEN_MAP
+    elif tier == "atv":
+        rename_map = _ATV_TOKEN_MAP
+    else:
+        rename_map = _DAISY_TOKEN_MAP
     flat = _flatten_tailwind(export_dict)
     result: dict[str, str] = {}
     for tw_var, value in flat.items():
@@ -321,6 +353,49 @@ def _detect_harness_safe() -> str:
         return detect_harness()
     except (ImportError, Exception):
         return "standalone"
+
+
+def _has_body_typography(html_content: str) -> bool:
+    """Return True if the rendered HTML has CSS rules styling semantic body elements.
+
+    Two satisfying signals:
+
+    1. Inline ``<style>`` blocks contain rules whose selectors include any of
+       h1-h6, p, ul, ol, li, pre, code, blockquote, table (in any selector
+       context — bare ``h2``, scoped ``.pb-content h2``, combined lists, etc.).
+    2. External stylesheet links to a known framework that ships default
+       typography for semantic HTML (e.g. pico.css). Daisy/Tailwind do NOT
+       count: Tailwind's preflight reset *strips* default typography without
+       restoring it, which is the failure mode this check exists to catch.
+
+    The absence of both signals is the daisy-template failure mode: body_html
+    gets dumped into an unstyled container and renders as a wall of monospace
+    text the schema-only lint cannot detect.
+    """
+    # Signal 1: inline <style> rules
+    styles = re.findall(r"<style[^>]*>(.*?)</style>", html_content, re.DOTALL | re.IGNORECASE)
+    if styles:
+        combined = "\n".join(styles)
+        pattern = re.compile(
+            r"(?:^|[\s,>+~])(?:h[1-6]|p|ul|ol|li|pre|code|blockquote|table|tbody|thead|th|td)"
+            r"\s*[,{]",
+            re.MULTILINE,
+        )
+        if pattern.search(combined):
+            return True
+
+    # Signal 2: external stylesheet from a framework that styles semantic HTML
+    # by default. Tailwind/daisyUI are intentionally excluded — Tailwind's
+    # preflight reset strips default styling without adding it back, so the
+    # tier template must provide its own inline rules.
+    link_pattern = re.compile(
+        r"<link[^>]+href=[\"'][^\"']*"
+        r"(?:pico(?:css)?\.|picocss/pico|/pico@|/pico\.min\.css|"
+        r"bootstrap(?:\.|/dist/|@)|"
+        r"sakura\.css|simple\.css|water\.css|spectre\.css|tufte\.css)",
+        re.IGNORECASE,
+    )
+    return bool(link_pattern.search(html_content))
 
 
 def _default_body_html(input_data: dict[str, Any]) -> str:

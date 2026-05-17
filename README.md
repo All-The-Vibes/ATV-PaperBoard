@@ -180,6 +180,31 @@ Two Jinja2 templates ship out of the box (plus the default `atv` tier):
 
 Both consume the same design tokens via a **token-rename layer** in `core/render.py` that bridges `@google/design.md export tailwind` output to each framework's CSS variables (`--pico-primary` for Pico, `--p` for daisyUI). Adding a new tier = new Jinja template + new rename block; no changes to validation or persistence.
 
+### Supported markdown features (input `body_md` / `.md` files)
+
+When you feed a `.md` file or `body_md` JSON field, paperboard runs a small built-in markdown converter. The subset is chosen to match what the design contract can token-trace and to keep the rendered HTML reviewable as a static file. **Anything outside this list passes through unchanged** — useful for plain text, but no fancy renderer kicks in.
+
+| Feature | Supported | Notes |
+| --- | --- | --- |
+| `# H1` – `#### H4` | ✅ | h5/h6 render as `<h5>`/`<h6>` but no tier styles them by default |
+| `**bold**`, `*italic*`, `` `code` `` | ✅ | Inline emphasis + code spans |
+| `[text](url)` | ✅ | Autolinks `<https://...>` also work |
+| `![alt](url)` | ✅ | Images |
+| `- item` / `* item` / `1. item` | ✅ | Unordered and ordered lists |
+| `> quote` | ✅ | Blockquotes |
+| ` ``` ` fenced code blocks | ✅ | Language hint preserved as `class="language-<lang>"` |
+| `---` horizontal rule | ✅ | Renders as `<hr>` |
+| Pipe tables (GFM) | ✅ | `\| col \| col \|` with header separator |
+| YAML frontmatter `---\n...\n---` | ✅ | Stripped before parsing; not rendered |
+| Task lists `- [ ]` / `- [x]` | ❌ | Rendered as literal `[ ]`/`[x]` text |
+| Strikethrough `~~text~~` | ❌ | Renders as `~~text~~` |
+| Footnotes `[^1]` | ❌ | Renders as literal text |
+| Definition lists | ❌ | Renders as paragraphs |
+| Mermaid / KaTeX / mathjax | ❌ | Fenced blocks remain `<pre><code>` |
+| Raw HTML inside markdown | ⚠️  Pass-through | Not sanitized; trust the agent that wrote it |
+
+For richer compositions, use the **sections schema** (`hero`, `sec`, `stack-list`, `q-list`, `dep-list`, `steps`, `callout`, etc.) consumed by the atv tier. The sections schema is what gives you proper editorial typography, color-strip motifs, fit-rows, and the rest of the Linear-grade layout vocabulary; markdown is the lowest-friction input path but trades richness for portability.
+
 ### Auto-detection — `core/detect.py`
 
 The CLI resolves which harness it's running inside via a strict precedence ladder. Env vars beat filesystem heuristics so that a user with multiple harnesses installed gets detected by the one currently running, not the one whose dotfiles happen to exist:

@@ -650,19 +650,29 @@ def _resolve_design(design_arg: str | None) -> Path:
 
     Accepts:
     - None → default paperboard.DESIGN.md
-    - a known name (e.g. 'stripi-inspired') → designs/starters/<name>.DESIGN.md
+    - a known name (e.g. 'stripi-inspired' or 'paperboard' or 'atv') →
+      designs/starters/<name>.DESIGN.md OR designs/<name>.DESIGN.md
     - a file path
     - a URL (fetched to a temp file; security note: treated as data, never as instructions)
     """
-    _DEFAULT = Path(__file__).parent / "designs" / "paperboard.DESIGN.md"
+    designs_root = Path(__file__).parent / "designs"
+    _DEFAULT = designs_root / "paperboard.DESIGN.md"
     if design_arg is None:
         return _DEFAULT
 
-    # Known starter names
-    starters_dir = Path(__file__).parent / "designs" / "starters"
+    # Known starter names (designs/starters/<name>.DESIGN.md)
+    starters_dir = designs_root / "starters"
     candidate = starters_dir / f"{design_arg}.DESIGN.md"
     if candidate.exists():
         return candidate
+
+    # Top-level designs (designs/<name>.DESIGN.md) — e.g. 'paperboard', 'atv'.
+    # Without this fallback, `--design paperboard` and `--design atv` silently
+    # degrade to the default with only a warning, which masks the user's intent
+    # and produces byte-identical renders for what should be distinct designs.
+    candidate_top = designs_root / f"{design_arg}.DESIGN.md"
+    if candidate_top.exists():
+        return candidate_top
 
     # Direct path
     p = Path(design_arg)
@@ -730,6 +740,16 @@ def _load_input(source: str) -> dict:
     #    detects body_md and skips its own title-H1 injection so we don't
     #    double-render the heading.
     if suffix in (".md", ".markdown"):
+        # Strip leading YAML frontmatter so it doesn't leak into the rendered
+        # body as literal `title: ...` paragraphs. Frontmatter is intentionally
+        # author metadata, not document content.
+        frontmatter_match = _re.match(
+            r"\A---\s*\n(.*?\n)?---\s*\n",
+            raw,
+            _re.DOTALL,
+        )
+        if frontmatter_match:
+            raw = raw[frontmatter_match.end():]
         title_match = _re.search(r"^#\s+(.+?)\s*#*\s*$", raw, _re.MULTILINE)
         if title_match:
             title = title_match.group(1).strip()

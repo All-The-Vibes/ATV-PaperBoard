@@ -10,19 +10,19 @@
 <style>
   :root {
     --bg: {{ tokens.get('--color-background', '#08090a') }};
-    --bg-zebra: #0a0b0d;
-    --canvas-hero: #050507;
+    --bg-zebra: color-mix(in oklab, var(--bg) 97%, white);
+    --canvas-hero: color-mix(in oklab, var(--bg) 80%, black);
     --surface: {{ tokens.get('--color-surface', '#0e0f12') }};
-    --surface-2: #14151a;
-    --surface-3: #1a1b21;
-    --code-bg: #06060a;
+    --surface-2: color-mix(in oklab, var(--surface) 92%, white);
+    --surface-3: {{ tokens.get('--color-border', '#1a1b21') }};
+    --code-bg: color-mix(in oklab, var(--bg) 70%, black);
     --line: rgba(255,255,255,0.06);
     --line-strong: rgba(255,255,255,0.14);
     --line-bright: rgba(255,255,255,0.22);
     --text-1: {{ tokens.get('--color-foreground', '#f7f8f8') }};
-    --text-2: #d0d6e0;
+    --text-2: color-mix(in oklab, var(--text-1) 85%, var(--text-3));
     --text-3: {{ tokens.get('--color-muted', '#8a8f98') }};
-    --text-4: #62666d;
+    --text-4: color-mix(in oklab, var(--text-3) 70%, var(--bg));
     --accent: {{ tokens.get('--color-primary', '#7170ff') }};
     --accent-bg: rgba(94,106,210,0.10);
     --accent-line: rgba(113,112,255,0.32);
