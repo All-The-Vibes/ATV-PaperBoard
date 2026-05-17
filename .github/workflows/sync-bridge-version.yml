@@ -73,10 +73,8 @@ jobs:
             exit 0
           fi
           git add -A
-          git commit -m "chore: sync @google/design.md pins to ${{ steps.ver.outputs.version }}
-
-Auto-generated to keep README, workflow template, and per-adapter
-INSTALL.md in step with the package.json bump in this PR.
-
-Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>"
+          git commit \
+            -m "chore: sync @google/design.md pins to ${{ steps.ver.outputs.version }}" \
+            -m "Auto-generated to keep README, workflow template, and per-adapter INSTALL.md in step with the package.json bump in this PR." \
+            -m "Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>"
           git push origin HEAD:${{ github.head_ref }}
